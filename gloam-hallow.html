@@ -8494,7 +8494,10 @@ window.GLOAM_HALLOW_MUSIC_2 = "SUQzAwAAAAAvZUdFT0IAABfbAAAAYXBwbGljYXRpb24vYzJwY
    Step 5f-1 (the playtest, 8 November 2026; no kit change): the play check (HANDOVER.md, "Left for 5f" and "The speed target"), from
    Testing or the speed test link (?check): it plays by itself, Can't be hurt on, through each place's busiest stretch and then its boss, times
    it as the test page's speed check times its legs, and shows the result on the title with Email, WhatsApp and Copy; and the playtest's own
-   copy (at its own address, or ?playtest), with no Testing screen. */
+   copy (at its own address, or ?playtest), with no Testing screen.
+   Step 5f-2 (Barney's Pixel: the speed test went black under the HUD after about a minute, the sound playing on): each leg named on the
+   plaque line as it begins; a fall the check's hands don't clear put straight across before any fade, and every leg lifting the fade; no
+   fade at the finish; and the browser resetting the picture's drawing counted in the result. */
 
 const PLACES = ['night', 'storm', 'dawn', 'mist'];
 const TRACK = { night: 0, storm: 0, dawn: 1, mist: 1 };   // The Long Vigil, then Lantern in the Moor from Dawn's place card
@@ -9880,7 +9883,7 @@ function pathScroll(g) {
   }
 }
 function lootUpdate(g, lb, dt) {
-  const camX = camAt(g, lb), free = g.mode !== 'lost' && g.mode !== 'return';
+  const camX = camAt(g, lb), free = g.mode !== 'lost' && g.mode !== 'return' && !g.check;   // 5f-2: the play check picks nothing up (no plaque lines of its own)
   for (const it of g.loot) {
     if (it.drop != null) { it.drop += dt; if (it.drop >= 0.45) it.drop = null; continue; }   // out of the fallen monster (0.45 s)
     if (it.pick != null) { it.pick += dt; if (it.pick >= 0.5) it.gone = true; continue; }   // lifting into him (0.5 s)
@@ -10391,7 +10394,7 @@ function withSeed(seed, fn) { const r = Math.random; Math.random = seeded(seed);
 const pct95 = (a) => { const b = a.slice().sort((x, y) => x - y); return b.length ? b[Math.min(b.length - 1, Math.floor(0.95 * b.length))] : 0; };
 function startCheck(g, lb) {
   Object.assign(g, { safe: true, teach: false, monsTest: 'normal', loop: 1, orders: null });
-  g.check = { legs: [], i: -1, phase: 'settle', t: 0, leadT: 0, inp: noInput(), res: [], work: 0, last: 0, lvl: null, stable: 0, slips: 0, lost: false };
+  g.check = { legs: [], i: -1, phase: 'settle', t: 0, leadT: 0, inp: noInput(), res: [], work: 0, last: 0, lvl: null, stable: 0, slips: 0, picLost: 0, hooked: false };
   PLACES.forEach((p, k) => g.check.legs.push({ p: k, boss: false, n: 0 }, { p: k, boss: true, n: 0 }));
   withSeed(1, () => loadPlace(g, lb, 0, 0));
   lb.hud.health(1); lb.hud.mana(1); lb.hud.armour(g.armour); lb.hud.lives(LIVES); hudSpells(g, lb); lb.hud.potCap(g.potCap.health, g.potCap.mana); lb.hud.potions(0, 0);
@@ -10436,10 +10439,15 @@ function nextLeg(g, lb) {
     g.x = x; g.y = surfaceAt(g, x); g.on = pieceUnder(g, g.x, g.y);
     g.cps.forEach((cp, k) => { if (cp.x < x) { cp.lit = true; g.lastCp = k; } });   // the lanterns behind him already lit
   }
-  Object.assign(g, { vy: 0, facing: 1, mode: 'ground', mt: 0, walkDist: 0, landT: 9, cast: null, castBuf: 0, atkBuf: 0 });
+  Object.assign(g, { vy: 0, facing: 1, mode: 'ground', mt: 0, walkDist: 0, landT: 9, cast: null, castBuf: 0, atkBuf: 0, lost: null, safeT: 0, hurtT: 9 });
+  lb.fade(0);                          // 5f-2: nothing left black from the leg before
   if (!prev || prev.p !== leg.p) enterPlace(g, lb);
+  // 5f-2 (Barney's Pixel blacked out under the HUD): each leg named as it begins, under the HUD's top row, without a chime; gone (2 s)
+  // before its timing starts, so a tester sees it working and, if the picture ever goes, which leg it went on
+  lb.hud.line(null, checkWord() + ' ' + (C.i + 1) + ' of ' + C.legs.length + ': ' + (leg.boss ? lb.world.bossNames[PLACES[leg.p]] : PLACE_SHORT[leg.p]), { chime: false });
   C.phase = 'lead'; C.leadT = 0; C.t = 0;
 }
+const checkWord = () => (PLAYTEST ? 'Speed test' : 'Play check');
 // the play check's hands: on, over a pit and up a face (a jump, or a climb where it is too tall), or at a boss, near enough to strike it
 function drive(g, lb) {
   const C = g.check, leg = C.legs[C.i], inp = noInput(), b = g.boss;
@@ -10465,8 +10473,17 @@ function checkUpdate(g, lb) {
   if (C.done) return;                  // finished: the scene holds still until the page reloads
   C.inp = drive(g, lb);
   playUpdate(g, lb);
-  if (g.mode === 'lost' && !C.lost) C.slips++;   // a fall the hands didn't clear, for the record (it shouldn't happen)
-  C.lost = g.mode === 'lost';
+  // a fall the hands didn't clear (it shouldn't happen): counted, and he is put straight across, before any fade (5f-2: a fall's fade cut
+  // short by the next leg stayed black)
+  if (g.mode === 'lost') {
+    C.slips++;
+    const P = g.lost, f = P && P.f ? P.f : 1;
+    let x = P && P.pit ? (f > 0 ? P.pit[1] + 12 : P.pit[0] - 12) : g.x;
+    while (g.L.pit(x)) x += 8 * f;
+    Object.assign(g, { x, vy: 0, mode: 'ground', mt: 0, landT: 9, lost: null, facing: f });
+    g.y = surfaceAt(g, x); g.on = pieceUnder(g, g.x, g.y);
+    lb.fade(0);
+  }
   const leg = C.legs[C.i], b = g.boss;
   if (leg && C.phase === 'lead') {
     C.leadT += 1 / 60;
@@ -10478,6 +10495,9 @@ function checkUpdate(g, lb) {
 function checkDraw(ctx, g, lb) {
   const C = g.check, now = performance.now(), gap = C.last ? now - C.last : 1000 / 60, live = lb.screen === 'play' && !C.done && gap < 250;
   C.last = now;
+  // 5f-2: the browser taking the picture's drawing away (a phone's graphics reset: the picture goes black under the HUD, as the kit's
+  // painted layers are lost with it), counted for the result
+  if (!C.hooked) { C.hooked = true; ctx.canvas.addEventListener('contextlost', () => { C.picLost++; }); }
   const load = live && C.phase === 'load', pre = C.work, d0 = performance.now();
   playDraw(ctx, g, lb);
   // while its drawing is timed: eight frames a refresh, each a step of play and a frame drawn 1/60 s on from the last
@@ -10510,11 +10530,12 @@ function checkDraw(ctx, g, lb) {
 function finishCheck(g, lb) {
   const C = g.check, p = lb.picture, s = lb.settings;
   C.done = true; C.inp = noInput();
-  lb.hud.boss(null); lb.fade(1);
+  lb.hud.boss(null);
+  lb.hud.line(null, checkWord() + ' finished', { chime: false });   // 5f-2: no fade to black; the scene holds still while the page reloads
   const res = { v: 1, kit: lb.version, day: today(), device: device(), width: p.width, height: p.height, k: p.sharpness, lines: Math.round(lb.W),
-    picture: s.picture, effects: !!s.effects, rm: !!s.reduceMotion, slips: C.slips, legs: C.res };
+    picture: s.picture, effects: !!s.effects, rm: !!s.reduceMotion, slips: C.slips, picLost: C.picLost, legs: C.res };
   try { window.name = CHECK_NAME + JSON.stringify(res); } catch (e) { /* the title then shows nothing */ }
-  setTimeout(() => location.reload(), 300);
+  setTimeout(() => location.reload(), 1000);
 }
 // the browser, the system and the graphics chip, as far as the browser says (the test page's)
 function device() {
@@ -10549,7 +10570,8 @@ function readCheck(o) {
     legs.push(r);
   }
   return { kit: str(o.kit, 20), day: str(o.day, 10), device: str(o.device, 160), width: num(o.width, 0, 1e5) || 0, height: num(o.height, 0, 1e5) || 0, k: num(o.k, 0, 10) || 1,
-    lines: num(o.lines, 0, 1e5) || 0, picture: PICTURE_NAMES[o.picture] ? o.picture : 'auto', effects: o.effects !== false, rm: o.rm === true, slips: num(o.slips, 0, 99) || 0, legs };
+    lines: num(o.lines, 0, 1e5) || 0, picture: PICTURE_NAMES[o.picture] ? o.picture : 'auto', effects: o.effects !== false, rm: o.rm === true, slips: num(o.slips, 0, 99) || 0,
+    picLost: num(o.picLost, 0, 99) || 0, legs };
 }
 function checkShown(lb) {
   let o = null;
@@ -10569,7 +10591,8 @@ function checkText(lb, res) {
   const lines = [
     'Gloam Hallow ' + (PLAYTEST ? 'speed test' : 'play check') + ', ' + res.day + ', kit ' + res.kit,
     res.device + ' · ' + res.width + ' × ' + res.height + ' at ' + res.k.toFixed(2) + '× · ' + res.lines + ' lines wide · Picture ' + PICTURE_NAMES[res.picture] +
-      (lvl ? ' (' + PICTURE_NAMES[lvl] + ')' : '') + (res.effects ? '' : ' · effects off') + (res.rm ? ' · reduce motion' : '') + (res.slips ? ' · ' + res.slips + ' falls' : ''),
+      (lvl ? ' (' + PICTURE_NAMES[lvl] + ')' : '') + (res.effects ? '' : ' · effects off') + (res.rm ? ' · reduce motion' : '') + (res.slips ? ' · ' + res.slips + ' falls' : '') +
+      (res.picLost ? ' · the picture was lost ' + res.picLost + (res.picLost === 1 ? ' time' : ' times') : ''),
     'Phone target (30 fps, drawn in 25 ms): ' + (phonePass(res) ? 'passes' : 'does not pass') + '. Computer target (60 fps): ' + (computerPass(res) ? 'passes' : 'does not pass') + '.'];
   res.legs.forEach((r) => lines.push(legName(lb, r) + ': ' + Math.round(r.fps) + ' fps, drawn in ' + drawnIn(r) + ', slowest 5% ' + Math.round(r.slow) + ' ms, longest ' +
     Math.round(r.max) + ' ms, work ' + r.work.toFixed(1) + ' ms' + (r.level && r.level !== lvl ? ', Picture ' + PICTURE_NAMES[r.level] : '')));
@@ -10604,7 +10627,9 @@ function checkPlaque(lb, ui, res) {
   const email = ui.button('Email', true), whatsapp = ui.button('WhatsApp'), copy = ui.button('Copy'), close = ui.button('Close');
   btns.append(email, whatsapp, copy, close);
   if (phone) btns.querySelectorAll('button').forEach((b) => { b.style.minWidth = '0'; });
-  face.append(head, t, key, verdict, btns);
+  face.append(head, t, key, verdict);
+  if (res.picLost) face.append(ui.txt('p', 'lb-note', 'The picture went black ' + (res.picLost === 1 ? 'once' : res.picLost + ' times') + ' during the test (the browser reset its drawing).'));   // 5f-2
+  face.append(btns);
   const open = (url) => { lb.sfx('confirm'); location.href = url; };
   const toEmail = () => open('mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text.replace(/\n/g, '\r\n')));
   const toWhatsApp = () => open('whatsapp://send?text=' + encodeURIComponent(text));   // the app's own link (a web address in a game is against the build's rules)
