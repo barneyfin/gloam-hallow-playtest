@@ -8963,7 +8963,8 @@ LanternBox.game({
     clear: 'Your stolen echo and everything bought at the Echo Shrine will be gone, and the next run starts as a first run, hints and all. High scores and settings stay.' },
   credits: { music: ['Music made with Google Gemini', 'The Long Vigil \u00b7 Lantern in the Moor'], sound: 'Two sound effects from Pixabay; the rest made in code' },
   onLeave(g, lb) { if (!g.check) bankRun(g, lb, false); },   // Restart or Quit to menu: the run's echo is banked all the same (step 5f-1: a play check banks nothing)
-  init(lb) { checkShown(lb); },   // step 5f-1: a play check just finished shows its result on the title
+  init(lb) { checkShown(lb); },   // step 5f-1: a play check just finished shows its result on the title (5f-2: only if it couldn't in play)
+  onPause(g, lb) { if (g && g.check && g.check.result) lb.ui.open((ui) => checkPlaque(lb, ui, g.check.result, true)); },   // 5f-2: the result, at once, over the paused scene
   onHintsHidden(lb) { lb.progress.hintsHidden = true; lb.saveProgress(); if (G) G.teach = false; },   // step 5e-4: hidden for good
   shrine: { bank: (lb) => lb.progress.echo, open: openShrine },   // kit 0.10.2: on the title's arch; step 5e-1: the Echo Shrine itself
   chooseRun,   // step 5e-1: the choice of run, once anything is bought
@@ -10531,11 +10532,23 @@ function finishCheck(g, lb) {
   const C = g.check, p = lb.picture, s = lb.settings;
   C.done = true; C.inp = noInput();
   lb.hud.boss(null);
-  lb.hud.line(null, checkWord() + ' finished', { chime: false });   // 5f-2: no fade to black; the scene holds still while the page reloads
   const res = { v: 1, kit: lb.version, day: today(), device: device(), width: p.width, height: p.height, k: p.sharpness, lines: Math.round(lb.W),
     picture: s.picture, effects: !!s.effects, rm: !!s.reduceMotion, slips: C.slips, picLost: C.picLost, legs: C.res };
-  try { window.name = CHECK_NAME + JSON.stringify(res); } catch (e) { /* the title then shows nothing */ }
-  setTimeout(() => location.reload(), 1000);
+  C.result = readCheck(res);
+  // 5f-2 (Barney's Pixel: the reload to the title left it black for about 10 s): the result shows at once, over the scene paused as P pauses
+  // it (the kit has no call for a game to pause; onPause opens the result in place of the pause plaque, where the menus' keys work and a
+  // switch of app changes nothing); already paused, it opens over the pause plaque. 0.7 s first, so the boss's bar has faded.
+  setTimeout(() => {
+    if (lb.screen === 'play') {
+      const key = (type) => document.dispatchEvent(new KeyboardEvent(type, { code: 'KeyP', key: 'p', bubbles: true }));
+      key('keydown'); key('keyup');
+    } else if (lb.screen === 'paused') lb.ui.open((ui) => checkPlaque(lb, ui, C.result, true));
+    if (lb.screen === 'paused') return;
+    // otherwise, as 5f-1 did: the result kept in the window's name, and the page reloaded to the title, which shows it
+    lb.hud.line(null, checkWord() + ' finished', { chime: false });
+    try { window.name = CHECK_NAME + JSON.stringify(res); } catch (e) { /* the title then shows nothing */ }
+    setTimeout(() => location.reload(), 1000);
+  }, 700);
 }
 // the browser, the system and the graphics chip, as far as the browser says (the test page's)
 function device() {
@@ -10600,7 +10613,7 @@ function checkText(lb, res) {
   return lines.join('\n');
 }
 // the result on the title (the plaque built from the kit's parts): each place's path and boss, the targets, and the ways to send it
-function checkPlaque(lb, ui, res) {
+function checkPlaque(lb, ui, res, inRun) {   // inRun (5f-2): over the paused scene, so Close leaves the run
   const phone = ui.phone, text = checkText(lb, res), subject = 'Gloam Hallow ' + (PLAYTEST ? 'speed test' : 'play check');
   const { panel, face } = ui.plaque('gh-ck', 560, 640, phone ? 'gap:6px;padding:12px 16px 12px' : 'gap:10px;padding:18px 20px 14px');
   const head = ui.heading('gh-ck', PLAYTEST ? 'Speed test' : 'Play check');
@@ -10648,7 +10661,9 @@ function checkPlaque(lb, ui, res) {
     };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, pick); else pick();
   };
-  const shut = () => { lb.sfx('back'); ui.close(); };
+  // Close: on the title, back to it; over the paused scene (5f-2), out of the run: the playtest's own page (small, so at once), or in
+  // Barney's copies the page reloaded to the title (the kit has no call for a game to leave a run)
+  const shut = () => { lb.sfx('back'); if (!inRun) ui.close(); else if (PLAYTEST) location.href = './'; else location.reload(); };
   return { panel, items: [{ el: email, activate: toEmail }, { el: whatsapp, activate: toWhatsApp }, { el: copy, activate: toCopy }, { el: close, activate: shut }], opts: { back: shut } };
 }
 </script>
