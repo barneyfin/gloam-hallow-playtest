@@ -8497,7 +8497,9 @@ window.GLOAM_HALLOW_MUSIC_2 = "SUQzAwAAAAAvZUdFT0IAABfbAAAAYXBwbGljYXRpb24vYzJwY
    copy (at its own address, or ?playtest), with no Testing screen.
    Step 5f-2 (Barney's Pixel: the speed test went black under the HUD after about a minute, the sound playing on): each leg named on the
    plaque line as it begins; a fall the check's hands don't clear put straight across before any fade, and every leg lifting the fade; no
-   fade at the finish; and the browser resetting the picture's drawing counted in the result. */
+   fade at the finish; and the browser resetting the picture's drawing counted in the result. Then the result at once, over the paused
+   scene, with no reload.
+   Step 5f-3 (Barney, 9 November 2026): the screen kept awake during the play check (the browser's wake lock), until its result is left. */
 
 const PLACES = ['night', 'storm', 'dawn', 'mist'];
 const TRACK = { night: 0, storm: 0, dawn: 1, mist: 1 };   // The Long Vigil, then Lantern in the Moor from Dawn's place card
@@ -8945,6 +8947,21 @@ const CHECK_NAME = 'gh-check:';   // the window's name while a play check's resu
 const PICTURE_NAMES = { auto: 'Automatic', best: 'Best', faster: 'Faster', fastest: 'Fastest' };
 const PLACE_SHORT = ['Night', 'Blood Red Rain', 'Dawn', 'Mist'];
 const IN = (g, lb) => (g.check ? g.check.inp : lb.input);   // the controls, or the play check's own
+// 5f-3 (Barney, 9 November 2026): the screen kept awake while the play check runs, hands off for about a minute and a half (longer than many
+// phones' sleep timer), from its start until its result is left; asked for again when the page comes back into view (a browser lets go of
+// it whenever the page is hidden); where a browser can't, the check runs as before
+const wake = { lock: null, want: false };
+function wakeHold(on) {
+  wake.want = on;
+  if (!on) { if (wake.lock) { wake.lock.release().catch(() => {}); wake.lock = null; } return; }
+  if (wake.lock || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+  navigator.wakeLock.request('screen').then((l) => {
+    if (!wake.want) { l.release().catch(() => {}); return; }
+    wake.lock = l;
+    l.addEventListener('release', () => { if (wake.lock === l) wake.lock = null; });
+  }).catch(() => { /* refused (low battery, or not allowed here): the check runs on */ });
+}
+document.addEventListener('visibilitychange', () => { if (wake.want) wakeHold(true); });
 
 LanternBox.game({
   id: 'gloam-hallow',
@@ -8962,7 +8979,7 @@ LanternBox.game({
   save: { version: SAVE_VERSION, fresh: freshRecord, read: readRecord,
     clear: 'Your stolen echo and everything bought at the Echo Shrine will be gone, and the next run starts as a first run, hints and all. High scores and settings stay.' },
   credits: { music: ['Music made with Google Gemini', 'The Long Vigil \u00b7 Lantern in the Moor'], sound: 'Two sound effects from Pixabay; the rest made in code' },
-  onLeave(g, lb) { if (!g.check) bankRun(g, lb, false); },   // Restart or Quit to menu: the run's echo is banked all the same (step 5f-1: a play check banks nothing)
+  onLeave(g, lb) { if (g.check) wakeHold(false); else bankRun(g, lb, false); },   // Restart or Quit to menu: the run's echo is banked all the same (step 5f-1: a play check banks nothing; 5f-3: it lets the screen sleep again)
   init(lb) { checkShown(lb); },   // step 5f-1: a play check just finished shows its result on the title (5f-2: only if it couldn't in play)
   onPause(g, lb) { if (g && g.check && g.check.result) lb.ui.open((ui) => checkPlaque(lb, ui, g.check.result, true)); },   // 5f-2: the result, at once, over the paused scene
   onHintsHidden(lb) { lb.progress.hintsHidden = true; lb.saveProgress(); if (G) G.teach = false; },   // step 5e-4: hidden for good
@@ -10400,6 +10417,7 @@ function startCheck(g, lb) {
   withSeed(1, () => loadPlace(g, lb, 0, 0));
   lb.hud.health(1); lb.hud.mana(1); lb.hud.armour(g.armour); lb.hud.lives(LIVES); hudSpells(g, lb); lb.hud.potCap(g.potCap.health, g.potCap.mana); lb.hud.potions(0, 0);
   lb.fade(0); enterPlace(g, lb); g.mode = 'ground';
+  wakeHold(true);                      // 5f-3: the screen kept awake until its result is left
   if (lb.settings.picture !== 'auto') nextLeg(g, lb);
   return g;
 }
@@ -10663,7 +10681,7 @@ function checkPlaque(lb, ui, res, inRun) {   // inRun (5f-2): over the paused sc
   };
   // Close: on the title, back to it; over the paused scene (5f-2), out of the run: the playtest's own page (small, so at once), or in
   // Barney's copies the page reloaded to the title (the kit has no call for a game to leave a run)
-  const shut = () => { lb.sfx('back'); if (!inRun) ui.close(); else if (PLAYTEST) location.href = './'; else location.reload(); };
+  const shut = () => { lb.sfx('back'); wakeHold(false); if (!inRun) ui.close(); else if (PLAYTEST) location.href = './'; else location.reload(); };   // 5f-3: the screen may sleep again
   return { panel, items: [{ el: email, activate: toEmail }, { el: whatsapp, activate: toWhatsApp }, { el: copy, activate: toCopy }, { el: close, activate: shut }], opts: { back: shut } };
 }
 </script>
