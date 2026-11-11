@@ -4,7 +4,7 @@ A playtest copy of **Gloam Hallow**, a game by Lantern Box Games, for friends an
 
 Open https://barneyfin.github.io/gloam-hallow-playtest/ and choose:
 
-- **Play Gloam Hallow** (`gloam-hallow.html`): the game.
+- **Play Gloam Hallow** (`gloam-hallow.html`): the game. A run is saved at each lantern, so a closed tab can carry on from the title (Continue).
 - **Speed test** (`gloam-hallow.html?check`): Start game plays by itself for about two minutes, then shows how smoothly it ran, with Email, WhatsApp and Copy to send the result (with the last 20 runs played on this device).
 - **Send my runs** (`gloam-hallow.html?runs`): the last 20 runs played on this device (how far each got, the lives lost and how it ended), with Email, WhatsApp and Copy to send them. The game sends nothing by itself.
 
