@@ -8715,7 +8715,9 @@ window.GLOAM_HALLOW_MUSIC_2 = "SUQzAwAAAAAvZUdFT0IAABfbAAAAYXBwbGljYXRpb24vYzJwY
    plaque line as it begins; a fall the check's hands don't clear put straight across before any fade, and every leg lifting the fade; no
    fade at the finish; and the browser resetting the picture's drawing counted in the result. Then the result at once, over the paused
    scene, with no reload.
-   Step 5f-3 (Barney, 9 November 2026): the screen kept awake during the play check (the browser's wake lock), until its result is left. */
+   Step 5f-3 (Barney, 9 November 2026): the screen kept awake during the play check (the browser's wake lock), until its result is left.
+   The Night pass (Barney, 11 November 2026, HANDOVER-night-pass.md; no kit change): The Veiled Ghost 30 blows (part A); a sword reach
+   upgrade on Night's path, about 15% along (part B); the playtest's run log, in the speed test's result and in Send my runs (?runs) (part D). */
 
 const PLACES = ['night', 'storm', 'dawn', 'mist'];
 const TRACK = { night: 0, storm: 0, dawn: 1, mist: 1 };   // The Long Vigil, then Lantern in the Moor from Dawn's place card
@@ -8787,6 +8789,7 @@ const ATK_T = { lunge: 0.88, dive: 1.4, bite: 1.0, swipe: 1.35, high: 1.3, low: 
 // body). Its splash hurts for 0.1 s, 24 either side and 30 up. 10% of health either way. Then it holds its ground 0.8 s (wait); on the
 // second loop its waits are 1.2 times shorter, as its hops are faster. The sword and the spells pass through the gob.
 const SPIT = { min: 160, max: 330, leave: 0.5, wait: 0.8, fly: 0.7, dmg: 0.10, r: 9, mouth: [18, 23], splashR: 24, splashH: 30, splashT: 0.1, splatT: 0.6 };
+const SPAT = { by: 'hatmaw', atk: 'spit' };   // the Night pass, part D: a gob or its splash, for the run log
 // The encounters: two or three hand-made patterns for each section shape (where along it, 0 to 1, and which role), one picked at
 // random for each section, each run. S a small ground monster, F a flyer, M a medium one.
 const PATTERNS = {
@@ -8911,9 +8914,11 @@ const LINES = { heal: ['Heal mastered', 'Heal: restores deeper'], fire: ['Fireba
 
 // The bosses (4d-4; starting figures): health in blows (a fight of about a minute), each attack's share of health (Barney: 20 to 30%),
 // where it stands from the arena's right end, its body as it faces left (from the kit's drawing, measured against a ruler), and the
-// pause between its moves. The kit's facing: 1 faces left as drawn, -1 turned round.
+// pause between its moves. The kit's facing: 1 faces left as drawn, -1 turned round. The Night pass, part A (Barney, 11 November 2026,
+// from his play of Night): The Veiled Ghost 30 blows, not 40 (*starting figure*), as a lost life restarts the fight at full health and
+// a new player has no heal yet; the other three as they were.
 const BOSS = {
-  night: { hp: 40, at: 260, body: [-50, 50, -236, -5], rest: [0.9, 1.5], dmg: { lunge: 0.2, behind: 0.2, wail: 0.25 } },
+  night: { hp: 30, at: 260, body: [-50, 50, -236, -5], rest: [0.9, 1.5], dmg: { lunge: 0.2, behind: 0.2, wail: 0.25 } },
   storm: { hp: 45, at: 240, body: [-60, 60, -182, -40], rest: [1.0, 1.6], dmg: { slam: 0.25, snap: 0.2, call: 0 } },
   dawn:  { hp: 50, at: 300, body: [-55, 60, -210, -40], rest: [0.8, 1.3], dmg: { leap: 0.25, sickle: 0.25, bolts: 0.2 },
     legs: [-135, 140, -125, 0] },   // Barney, 8 November 2026: her four spider legs can be struck too, for three quarters of a blow (LEG_HIT)
@@ -8922,7 +8927,8 @@ const BOSS = {
 const BOSS_WISPS = 25;
 
 /* ---------- saved progress (step 5d; design system version 12): one versioned record, read and written only through the kit ----------
-   lb.progress is the record; lb.saveProgress() writes it. Nothing about a run in progress is kept: a run always starts at Night. */
+   lb.progress is the record; lb.saveProgress() writes it. Nothing about a run in progress is kept: a run always starts at Night. The
+   playtest's copy adds runLog, its run log (the Night pass, part D), never read by play. */
 const SAVE_VERSION = 1;
 const BELTS = ['nightBlue', 'mulberry', 'ash'];   // bought at the Echo Shrine; 'scarf' is the red one he starts in (its token, wanderer-scarf)
 function freshRecord() {
@@ -8949,6 +8955,8 @@ function readRecord(old) {
   r.played = old.played === true; r.hintsHidden = old.hintsHidden === true;
   r.furthest = whole(old.furthest, -1, PLACES.length, -1);
   r.doubled = typeof old.doubled === 'string' && /^\d{4}-\d\d-\d\d$/.test(old.doubled) ? old.doubled : '';
+  const log = readRunLog(old.runLog);  // the Night pass, part D: the playtest's run log (the run log, below), kept by every copy
+  if (log) r.runLog = log;
   return r;
 }
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -8990,6 +8998,7 @@ function bankRun(g, lb, ended, bonus) {
 // the run's end (RunEnd): the kit draws it; these are its rules
 function runEndInfo(g, lb) {
   const b = bankRun(g, lb, true), rec = lb.progress, boss = g.boss;
+  runEnded(g, lb, 'over');             // the Night pass, part D: the playtest's run log (it notes only the first ending)
   let near = null;
   if (boss && boss.hp > 0 && boss.name && boss.st !== 'wait' && boss.st !== 'defeat' && boss.st !== 'done') near = { boss: boss.name, left: boss.hp / boss.max };
   else if (!b.first && g.p > b.furthest) near = { furthest: PLACE_NAMES[g.p] };   // not on the very first run: it has nothing to beat (Barney)
@@ -9179,6 +9188,117 @@ function wakeHold(on) {
 }
 document.addEventListener('visibilitychange', () => { if (wake.want) wakeHold(true); });
 
+/* ---------- the run log (the Night pass, part D; Barney, 11 November 2026, HANDOVER-night-pass.md): the playtest's copy only ----------
+   Barney's playtesters play at home and send back the speed test's result, which said nothing about how their runs went. Only when
+   PLAYTEST is set: nothing is kept or shown in the arcade's build or the CrazyGames build. The game sends nothing by itself: the log is text
+   in the speed test's result, or in Send my runs (the playtest page's ?runs), which the player sends by Email or WhatsApp, or copies. The
+   last 20 runs, in the progress record under a field of its own, runLog (Barney, 11 November 2026: the build lets a game save only
+   through the kit, and he chose this over a kit change), so it is saved by the kit's guarded store: a refused storage leaves the log
+   kept only while the page is open, and the game plays on. Settings' Clear saved progress clears it too. Only the playtest's copy writes
+   it; every copy keeps it as read (readRecord), so the arcade's copy on the same site never wipes it. The play check is no run. For each
+   run: which run and loop, each life lost (where, what took it, when), how it ended (none noted: left by closing the page), where it was
+   left, the time played (the kit's play clock, so pauses are left out) and the echo banked. */
+const RUNS_KEPT = 20;
+const RUNS_LINK = /[?&]runs\b/.test(location.search);
+let runLeft = null;                    // a run just left by Restart or Quit to menu: a run begun before this task ends makes it Restart
+let runLb = null;                      // the kit's api, for the page being hidden or closed
+// the log as read back from a saved record (readRecord): { n: runs begun, runs: newest first }, or null; each run is checked as it is shown
+function readRunLog(o) {
+  if (!o || typeof o !== 'object' || !Array.isArray(o.runs)) return null;
+  const n = typeof o.n === 'number' && isFinite(o.n) ? Math.max(0, Math.min(1e9, Math.floor(o.n))) : 0;
+  return { n, runs: o.runs.filter((r) => r && typeof r === 'object' && !Array.isArray(r)).slice(0, RUNS_KEPT) };
+}
+const runsOf = (lb) => (lb.progress && lb.progress.runLog) || { n: 0, runs: [] };
+const runsSave = (lb) => { if (lb) lb.saveProgress(); };
+function runBegin(g, lb) {
+  if (!PLAYTEST || g.check || !lb.progress) return;
+  const R = lb.progress.runLog || (lb.progress.runLog = { n: 0, runs: [] });
+  if (runLeft) { runLeft.end = 'restart'; runLeft = null; }
+  R.n++;
+  g.log = { n: R.n, day: today(), run: g.run, loop: g.loop, t: 0, p: g.p, sec: '', boss: false, lost: [], end: '', echo: null, won1: null };
+  R.runs.unshift(g.log);
+  if (R.runs.length > RUNS_KEPT) R.runs.length = RUNS_KEPT;
+  runLb = lb;
+  runsSave(lb);
+}
+// where he is: the place, and the path's section letter and how far along the path to the arena (a letter can come twice in a place), or
+// in the boss's fight
+function runWhere(g) {
+  const b = g.boss, fight = !!b && (b.st === 'arrive' || b.st === 'fight');
+  const s = fight ? null : g.L.sections.find((q) => g.x >= q.x0 && g.x < q.x1);
+  return { p: g.p, loop: g.loop, sec: s ? String(s.id) : '', at: fight ? null : Math.max(0, Math.min(100, Math.round(100 * g.x / g.L.arena))), boss: fight };
+}
+// the run as it stands (the time played, the loop, where), kept if save
+function runNote(g, lb, save) {
+  const L = g.log;
+  if (!L) return null;
+  if (!L.end) Object.assign(L, runWhere(g), { t: Math.round(lb.time) });
+  if (save) runsSave(lb);
+  return L;
+}
+function runLost(g, lb, kind) {
+  const L = runNote(g, lb);
+  if (!L || L.end) return;
+  const b = g.boss, by = kind === 'pit' ? { by: 'pit', atk: '' } : g.hitBy || { by: '', atk: '' };
+  L.lost.push({ t: L.t, p: L.p, loop: L.loop, sec: L.sec, at: L.at, boss: L.boss, by: by.by, atk: by.atk, left: L.boss ? Math.round(100 * b.hp / b.max) : null });
+  runsSave(lb);
+}
+function runWon(g, lb) { const L = runNote(g, lb); if (L && L.won1 == null) { L.won1 = L.t; runsSave(lb); } }   // the first loop's win
+// its end: 'over' (game over), 'win' (the second loop's), 'finish', 'quit' (made 'restart' if a run begins at once: the kit's Restart
+// begins one straight after onLeave, its Quit to menu doesn't); only the first is kept
+function runEnded(g, lb, end) {
+  const L = runNote(g, lb);
+  if (!L || L.end) return;
+  L.end = end; L.echo = g.banked ? g.banked.stolen : null;
+  if (end === 'quit') { runLeft = L; Promise.resolve().then(() => { runLeft = null; }); }
+  runsSave(lb);
+}
+if (PLAYTEST) {                        // the page hidden or closed mid-run: the time and where it was left kept
+  const away = () => { if (G && G.log && !G.log.end && runLb) runNote(G, runLb, true); };
+  addEventListener('pagehide', away);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') away(); });
+}
+// the log as text (one paragraph a run), read back as data: every value checked
+const RUN_MON = { crawler: 'a crawler', bat2: 'a flyer', hatmaw: 'a mouth-hat', ghoul2: 'a ghoul', walker: 'a walker' };
+const RUN_ATK = { lunge: 'lunge', dive: 'swoop', bite: 'bite', spit: 'spit', swipe: 'swipe', high: 'high sweep', low: 'low sweep', touch: 'touch',
+  behind: 'strike from behind', wail: 'wail', slam: 'tentacle slam', snap: 'jaw snap', call: 'call', leap: 'leap', sickle: 'sickle', bolts: 'ember bolts',
+  roots: 'roots', branch: 'branch', splinters: 'splinters' };
+const RUN_END = { over: 'game over', quit: 'quit to menu', restart: 'restarted' };
+const clockText = (s) => {
+  const n = Math.max(0, Math.round(s)), h = Math.floor(n / 3600), m = Math.floor(n / 60) % 60, x = String(n % 60).padStart(2, '0');
+  return h ? h + ':' + String(m).padStart(2, '0') + ':' + x : m + ':' + x;
+};
+function runWhereText(lb, w, twice) {   // twice: the run went round again, so the second loop is said
+  const p = Math.max(0, Math.min(3, Math.floor(Number(w.p) || 0)));
+  const along = typeof w.at === 'number' && isFinite(w.at) ? Math.round(w.at) + '% along' : '';
+  const at = w.boss === true ? lb.world.bossNames[PLACES[p]] : PLACE_SHORT[p] + (/^[A-Z]$/.test(w.sec) ? ' section ' + w.sec : '') +
+    (along || (twice && w.loop === 2) ? ' (' + [along, twice && w.loop === 2 ? 'second loop' : ''].filter(Boolean).join(', ') + ')' : '');
+  return at + (w.boss === true && twice && w.loop === 2 ? ' (second loop)' : '');
+}
+function runLine(lb, r) {
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  const twice = r.loop === 2, run = RUNS.find((x) => x.id === r.run);
+  const lost = Array.isArray(r.lost) ? r.lost.filter((q) => q && typeof q === 'object').slice(0, 9) : [];
+  const life = (q) => {
+    const cause = q.by === 'pit' ? 'a pit' : q.by === 'boss' ? 'its ' + (RUN_ATK[q.atk] || 'blow') : RUN_MON[q.by] ? RUN_MON[q.by] + "'s " + (RUN_ATK[q.atk] || 'blow') : 'a blow';
+    const left = q.boss === true && num(q.left) != null ? ' (' + (q.by === 'boss' ? 'it' : 'the boss') + ' had ' + Math.round(q.left) + '% left)' : '';
+    return runWhereText(lb, q, twice) + ' at ' + clockText(num(q.t) || 0) + ', ' + cause + left;
+  };
+  let end;
+  if (r.end === 'win') end = 'won both loops';
+  else if (r.end === 'finish') end = 'won and chose Finish';
+  else end = (num(r.won1) != null && r.loop !== 2 ? 'won the first loop, then ' : '') + (RUN_END[r.end] || 'left by closing the page') + ' ' +
+    (r.boss === true ? 'at ' : 'in ') + runWhereText(lb, r, twice);
+  const echo = num(r.echo) != null ? Math.round(r.echo) + ' echo' : 'no echo banked';
+  return 'Run ' + (num(r.n) || '?') + (typeof r.day === 'string' && /^\d{4}-\d\d-\d\d$/.test(r.day) ? ', ' + r.day : '') + ', ' + (run ? run.name : 'a run') + ', ' +
+    (twice ? 'into the second loop' : 'first loop') + ': ' + end + ' after ' + clockText(num(r.t) || 0) + ' played, ' + echo + '. ' +
+    (lost.length ? 'Lives lost: ' + lost.map(life).join('; ') + '.' : 'No lives lost.');
+}
+function runsLines(lb) {
+  const R = runsOf(lb);
+  return R.runs.length ? ['Your runs (the last ' + RUNS_KEPT + ', newest first):'].concat(R.runs.map((r) => runLine(lb, r))) : ['Your runs: none yet.'];
+}
+
 LanternBox.game({
   id: 'gloam-hallow',
   title: ['Gloam', 'Hallow'],
@@ -9195,8 +9315,10 @@ LanternBox.game({
   save: { version: SAVE_VERSION, fresh: freshRecord, read: readRecord,
     clear: 'Your stolen echo and everything bought at the Echo Shrine will be gone, and the next run starts as a first run, hints and all. High scores and settings stay.' },
   credits: { music: ['Music made with Google Gemini', 'The Long Vigil \u00b7 Lantern in the Moor'], sound: 'Two sound effects from Pixabay; the rest made in code' },
-  onLeave(g, lb) { if (g.check) wakeHold(false); else bankRun(g, lb, false); },   // Restart or Quit to menu: the run's echo is banked all the same (step 5f-1: a play check banks nothing; 5f-3: it lets the screen sleep again)
-  init(lb) { checkShown(lb); },   // step 5f-1: a play check just finished shows its result on the title (5f-2: only if it couldn't in play)
+  onLeave(g, lb) { if (g.check) wakeHold(false); else { bankRun(g, lb, false); runEnded(g, lb, 'quit'); } },   // Restart or Quit to menu: the run's echo is banked all the same (step 5f-1: a play check banks nothing; 5f-3: it lets the screen sleep again; the Night pass, part D: the run log, Restart told apart as a run begins at once)
+  // step 5f-1: a play check just finished shows its result on the title (5f-2: only if it couldn't in play); the Night pass, part D: the
+  // playtest page's Send my runs (?runs) opens the run log on the title
+  init(lb) { if (!checkShown(lb) && PLAYTEST && RUNS_LINK) lb.ui.open((ui) => runsPlaque(lb, ui)); },
   onPause(g, lb) { if (g && g.check && g.check.result) lb.ui.open((ui) => checkPlaque(lb, ui, g.check.result, true)); },   // 5f-2: the result, at once, over the paused scene
   onHintsHidden(lb) { lb.progress.hintsHidden = true; lb.saveProgress(); if (G) G.teach = false; },   // step 5e-4: hidden for good
   shrine: { bank: (lb) => lb.progress.echo, open: openShrine },   // kit 0.10.2: on the title's arch; step 5e-1: the Echo Shrine itself
@@ -9246,6 +9368,7 @@ LanternBox.game({
     tg.forEach((id) => { g.graces[id] = true; g.bound.push(id); }); heldToKit(g, lb);   // Testing: Graces held from the start
     G = g;
     if (wantCheck(lb)) return startCheck(g, lb);   // step 5f-1: the play check, in place of a run
+    runBegin(g, lb);                               // the Night pass, part D: the playtest's run log (the play check is no run)
     loadPlace(g, lb, g.p, { start: 0, half: 1, boss: 2 }[t.where] || 0);
     lb.hud.health(1); lb.hud.mana(1); lb.hud.armour(g.armour); lb.hud.lives(LIVES); hudSpells(g, lb); lb.hud.potCap(g.potCap.health, g.potCap.mana); lb.hud.potions(0, 0);
     lb.fade(1);   // black until the first place card lifts
@@ -9371,6 +9494,7 @@ function shuffledOrder(lb, order) {
 }
 function startLoop(g, lb) {
   g.loop = 2;
+  runNote(g, lb, true);                // the Night pass, part D: the run log
   g.orders = PLACES.map((p) => shuffledOrder(lb, lb.world.level(p).order));
   g.mode = 'card'; g.out = false; g.boss = null;
   lb.placeCard(PLACES[0], () => { lb.fade(0); loadPlace(g, lb, 0, 0); enterPlace(g, lb); },
@@ -9382,15 +9506,19 @@ function enterPlace(g, lb) {         // once the place card's black is down: the
   if (g.graces.iron) { g.armour = 3; lb.hud.armour(3); }   // Iron Skin: every place begins with full armour
   lb.ambient(PLACES[g.p]);
   lb.music(TRACK[PLACES[g.p]]);
+  runNote(g, lb, true);                // the Night pass, part D: the run log's place reached
 }
 function leavePlace(g, lb) {         // walking on out of the boss's arena: the next place's card, or after the Mist the win
   if (g.x < g.L.length + 30 || g.out) return;
   if (g.p === PLACES.length - 1) {   // the win (step 5e-5): after the first loop it offers the second, and Finish banks the run; after the second, banked now
     g.mode = 'over'; g.won = true;
     const o = { scored: g.run === 'bare', shrine: { bank: lb.progress.echo } };
-    if (g.loop === 1) Object.assign(o, { offer: true, again: () => startLoop(g, lb), finish: () => bankRun(g, lb, true), stolen: wouldSteal(g, lb) });
-    else {                           // step 5e-7 (design system 14, WinCard): the second loop's lanterns doubled too, 20 each
+    if (g.loop === 1) {              // the Night pass, part D: the run log notes the first loop's win, and Finish as the run's end
+      runWon(g, lb);
+      Object.assign(o, { offer: true, again: () => startLoop(g, lb), finish: () => { const b = bankRun(g, lb, true); runEnded(g, lb, 'finish'); return b; }, stolen: wouldSteal(g, lb) });
+    } else {                         // step 5e-7 (design system 14, WinCard): the second loop's lanterns doubled too, 20 each
       const each = LIFE_BONUS * hard(g, 'echo'), b = bankRun(g, lb, true, g.lives * each);
+      runEnded(g, lb, 'win');
       Object.assign(o, { words: LOOP_WIN, lifeBonus: each, stolen: { n: b.stolen, daily: b.daily != null } });
     }
     lb.win(o);
@@ -9589,6 +9717,7 @@ function startLost(g, lb, kind, pit) {
     lb.hud.armour(0, { stagger: ARMOUR_SHATTER });
     for (let i = 0; i < n; i++) lb.after(i * ARMOUR_SHATTER, () => lb.sfx('crack'));
   }
+  if (!g.lost.refuse && !g.safe) runLost(g, lb, kind);   // the Night pass, part D: the run log (a life The Grave Refuses saves is none lost)
 }
 function lostUpdate(g, lb, dt) {
   const t = g.mt, P = g.lost;
@@ -9960,9 +10089,10 @@ function bossHits(g, rolling) {
   const b = g.boss;
   if (!b || b.st !== 'fight') return null;
   const hit = b.move ? bossAttackHits(g, b, rolling) : null;
+  if (hit) hit.atk = b.move.name;      // the Night pass, part D: the attack, for the run log
   if (hit || rolling) return hit;
   const bb = bossBody(g);              // touching its body (none while it is faded, in the air or beaten)
-  return bb && !(bb[1] < g.x - BODY_W || bb[0] > g.x + BODY_W || bb[3] < g.y - BODY_H || bb[2] > g.y) ? { dmg: BOSS_TOUCH, x: b.bx } : null;
+  return bb && !(bb[1] < g.x - BODY_W || bb[0] > g.x + BODY_W || bb[3] < g.y - BODY_H || bb[2] > g.y) ? { dmg: BOSS_TOUCH, x: b.bx, atk: 'touch' } : null;
 }
 function bossAttackHits(g, b, rolling) {
   const m = b.move, u = m.t, P = b.place, dmg = BOSS[P].dmg[m.name], mir = bossMir(b, m.name), M = (v) => (mir ? 2 * b.bx - v : v);
@@ -10100,20 +10230,36 @@ function placeLoot(g, lb) {            // the scenery potions made real: on abou
     if (best != null) g.loot.push({ kind: 'health', x: best, y: g.L.ground(best), seed: 200 + k });
   });
   if (g.p === 0 && g.loop === 1) pathScroll(g);   // step 5e-6b
+  if (g.p === 0 && g.loop === 1 && !g.check) pathSword(g);   // the Night pass, part B (not in the play check, below)
 }
 // step 5e-6b (version 13, Loot; Barney, 7 November 2026): once a run, a scroll for the run's attack spell on open ground in Night's section B,
 // about 40% of the way through the place (its path to the boss's arena: 3,728 in Night, in B on the slope down after its crag): the nearest
 // spot to that with no pit within 160, no steep face within 24 and no piece within 20 (starting figures). Not on the second loop. It is an
 // ordinary scroll.
 const PATH_SCROLL_AT = 0.4;
+// open ground for loot laid on the path: no pit within 160, no steep face within 24 and no piece within 20 (starting figures)
+const pathOpen = (g, x) => g.L.pits.every((p) => p[1] < x - 160 || p[0] > x + 160) &&
+  g.L.banks.every((b) => b[1] < x - 24 || b[0] > x + 24) && !g.pieces.some((p) => x > p.x0 - 20 && x < p.x1 + 20);
 function pathScroll(g) {
   const B = g.L.sections.find((q) => q.id === 'B');
   if (!B) return;
   const want = Math.max(B.x0 + 40, Math.min(B.x1 - 40, PATH_SCROLL_AT * g.L.arena));
-  const open = (x) => x > B.x0 + 20 && x < B.x1 - 20 && g.L.pits.every((p) => p[1] < x - 160 || p[0] > x + 160) &&
-    g.L.banks.every((b) => b[1] < x - 24 || b[0] > x + 24) && !g.pieces.some((p) => x > p.x0 - 20 && x < p.x1 + 20);
+  const open = (x) => x > B.x0 + 20 && x < B.x1 - 20 && pathOpen(g, x);
   for (let d = 0; d <= 600; d += 8) for (const x of d ? [want - d, want + d] : [want]) {
     if (open(x)) { g.loot.push({ kind: g.attack, x, y: g.L.ground(x), seed: 300 }); return; }
+  }
+}
+// The Night pass, part B (Barney, 11 November 2026, from his play of Night: nothing improved the sword before the Ghost, as sword
+// upgrades come only from walkers, who join at Dawn, and from bosses): once a run, an ordinary reach upgrade on open ground about 15% of
+// the way along Night's path to the boss's arena (*starting figure*; 1,398 of 9,320, in section C, after the first three monsters), the
+// nearest spot by pathOpen's rule, searched along the whole path. Night's first loop only, in both runs, as the scroll. Not in the play
+// check: its Night path leg (603 to 1,449) would draw it, and it stays as it was timed before (the check picks nothing up anyway).
+const PATH_SWORD_AT = 0.15;
+function pathSword(g) {
+  const want = PATH_SWORD_AT * g.L.arena;
+  const open = (x) => x > 100 && x < g.L.arena - 100 && pathOpen(g, x);
+  for (let d = 0; d <= 1200; d += 8) for (const x of d ? [want - d, want + d] : [want]) {
+    if (open(x)) { g.loot.push({ kind: 'reach', x, y: g.L.ground(x), seed: 301 }); return; }
   }
 }
 function lootUpdate(g, lb, dt) {
@@ -10203,13 +10349,18 @@ function hurtCheck(g, lb) {
   const meets = (b) => b && !(b[1] < x0 || b[0] > x1 || b[3] < y0 || b[2] > y1);
   for (const m of g.mons) {
     if (!alive(m) || (m.riseT != null && m.riseT < 0.35)) continue;   // a crawler still rising out of the ground can't hurt yet
-    if (meets(atkZone(m, g)) || (!(rolling && MON[m.kind].through) && meets(monBox(m)))) return hurt(g, lb, MON[m.kind].dmg, m.px);
+    // the Night pass, part D: what hit him, for the run log: the attack's sweep, or its body in an attack that moves it (a lunge, a dive, a
+    // leap), or else its touch
+    const a = m.atk && m.atk.name;
+    if (meets(atkZone(m, g))) return hurt(g, lb, MON[m.kind].dmg, m.px, { by: m.kind, atk: a || 'touch' });
+    if (!(rolling && MON[m.kind].through) && meets(monBox(m))) return hurt(g, lb, MON[m.kind].dmg, m.px, { by: m.kind, atk: a && a !== 'spit' && !MON[m.kind].zone ? a : 'touch' });
   }
   const hit = bossHits(g, rolling);
-  if (hit) return hurt(g, lb, hit.dmg, hit.x);
+  if (hit) return hurt(g, lb, hit.dmg, hit.x, { by: 'boss', atk: hit.atk || 'touch' });
 }
-function hurt(g, lb, dmg, fromX) {
+function hurt(g, lb, dmg, fromX, by) {
   g.safeT = safeLen(g);
+  g.hitBy = by || null;                // the Night pass, part D: for the run log, if this blow costs a life
   // step 5e-3: Lantern Ward ignores the first hit in each place (its second of safety follows); 5e-6b: its lantern flares gold, its chime
   if (g.graces.ward && !g.warded) { g.warded = true; g.wardT = 0; lb.sfx('ward'); return; }
   g.hurtT = 0; g.atkBuf = 0;
@@ -10508,7 +10659,7 @@ function spitUpdate(g, lb, dt) {
       const q = b.path.at(t / SPIT.fly);
       if (gobMeets(g, q[0], q[1])) {   // it bursts on him
         b.done = true; g.splats.push({ x: q[0], y: q[1], slope: 0, t: 0, from: b.from, hurts: false }); lb.sfx('splat');
-        hurt(g, lb, SPIT.dmg, b.from);
+        hurt(g, lb, SPIT.dmg, b.from, SPAT);
       }
     }
     if (b.done) continue;
@@ -10521,7 +10672,7 @@ function spitUpdate(g, lb, dt) {
     if (s.hurts && s.t > SPIT.splashT) s.hurts = false;
     if (s.hurts && canHurt(g)) {
       const h = g.mode === 'roll' ? ROLL_H : BODY_H;
-      if (!(s.x + SPIT.splashR < g.x - BODY_W || s.x - SPIT.splashR > g.x + BODY_W || s.y < g.y - h || s.y - SPIT.splashH > g.y)) { s.hurts = false; hurt(g, lb, SPIT.dmg, s.from); }
+      if (!(s.x + SPIT.splashR < g.x - BODY_W || s.x - SPIT.splashR > g.x + BODY_W || s.y < g.y - h || s.y - SPIT.splashH > g.y)) { s.hurts = false; hurt(g, lb, SPIT.dmg, s.from, SPAT); }
     }
   }
   g.splats = g.splats.filter((s) => s.t < SPIT.splatT);
@@ -10834,6 +10985,7 @@ function checkShown(lb) {
   } catch (e) { o = null; window.name = ''; }
   const res = readCheck(o);
   if (res) lb.ui.open((ui) => checkPlaque(lb, ui, res));
+  return !!res;
 }
 const legName = (lb, r) => PLACE_SHORT[r.place] + (r.boss ? ', ' + lb.world.bossNames[PLACES[r.place]] : ', the path (' + r.n + (r.n === 1 ? ' monster)' : ' monsters)'));
 const drawnIn = (r) => (r.keptUp ? 'under ' : '') + r.drawn.toFixed(1) + ' ms';
@@ -10851,6 +11003,7 @@ function checkText(lb, res) {
     'Phone target (30 fps, drawn in 25 ms): ' + (phonePass(res) ? 'passes' : 'does not pass') + '. Computer target (60 fps): ' + (computerPass(res) ? 'passes' : 'does not pass') + '.'];
   res.legs.forEach((r) => lines.push(legName(lb, r) + ': ' + Math.round(r.fps) + ' fps, drawn in ' + drawnIn(r) + ', slowest 5% ' + Math.round(r.slow) + ' ms, longest ' +
     Math.round(r.max) + ' ms, work ' + r.work.toFixed(1) + ' ms' + (r.level && r.level !== lvl ? ', Picture ' + PICTURE_NAMES[r.level] : '')));
+  if (PLAYTEST) lines.push('', ...runsLines(lb));   // the Night pass, part D: the playtest's run log, under its own heading
   lines.push('', 'My phone, tablet or computer: ');
   return lines.join('\n');
 }
@@ -10878,13 +11031,34 @@ function checkPlaque(lb, ui, res, inRun) {   // inRun (5f-2): over the paused sc
   const slow = Math.round(Math.max(...res.legs.map((r) => r.slow))), long = Math.round(Math.max(...res.legs.map((r) => r.max)));
   const key = ui.txt('p', 'lb-note', 'Frames a second · a frame drawn in. Slowest 5% ' + slow + ' ms, longest ' + long + ' ms.');
   const verdict = ui.txt('p', 'lb-note', 'Phone target (30 fps, drawn in 25 ms): ' + (phonePass(res) ? 'passes' : 'does not pass') + '. Computer target (60 fps): ' + (computerPass(res) ? 'passes' : 'does not pass') + '.');
-  const btns = ui.el('div', 'lb-btns');
-  const email = ui.button('Email', true), whatsapp = ui.button('WhatsApp'), copy = ui.button('Copy'), close = ui.button('Close');
-  btns.append(email, whatsapp, copy, close);
-  if (phone) btns.querySelectorAll('button').forEach((b) => { b.style.minWidth = '0'; });
   face.append(head, t, key, verdict);
   if (res.picLost) face.append(ui.txt('p', 'lb-note', 'The picture went black ' + (res.picLost === 1 ? 'once' : res.picLost + ' times') + ' during the test (the browser reset its drawing).'));   // 5f-2
   if (res.trials.length) face.append(ui.txt('p', 'lb-note', 'Trial: ' + res.trials.join(', ') + '.'));   // kit 0.20.2
+  // Close: on the title, back to it; over the paused scene (5f-2), out of the run: the playtest's own page (small, so at once), or in
+  // Barney's copies the page reloaded to the title (the kit has no call for a game to leave a run)
+  const shut = () => { lb.sfx('back'); wakeHold(false); if (!inRun) ui.close(); else if (PLAYTEST) location.href = './'; else location.reload(); };   // 5f-3: the screen may sleep again
+  return { panel, items: sendRow(lb, ui, face, text, subject, shut), opts: { back: shut } };
+}
+// the Night pass, part D: Send my runs (the playtest page's ?runs): the run log on the title, sent as the speed test's result is; Close goes
+// back to the playtest page
+function runsPlaque(lb, ui) {
+  const phone = ui.phone, R = runsOf(lb);
+  const text = ['Gloam Hallow runs, ' + today() + ', kit ' + lb.version, device(), ''].concat(runsLines(lb), ['', 'My phone, tablet or computer: ']).join('\n');
+  const { panel, face } = ui.plaque('gh-rn', 560, 640, phone ? 'gap:6px;padding:12px 16px 12px' : 'gap:10px;padding:18px 20px 14px');
+  const list = ui.el('div', '');
+  list.style.cssText = 'max-height:' + (phone ? 150 : 300) + 'px;overflow-y:auto;text-align:left;display:flex;flex-direction:column;gap:6px';
+  if (R.runs.length) R.runs.forEach((r) => list.append(ui.txt('p', 'lb-note', runLine(lb, r))));
+  else list.append(ui.txt('p', 'lb-note', 'No runs yet.'));
+  face.append(ui.heading('gh-rn', 'Your runs'), list);
+  const shut = () => { lb.sfx('back'); location.href = './'; };
+  return { panel, items: sendRow(lb, ui, face, text, 'Gloam Hallow runs', shut), opts: { back: shut } };
+}
+// Email, WhatsApp, Copy and Close for a result's text, added to the plaque's face (step 5f-1's, shared by the Night pass, part D)
+function sendRow(lb, ui, face, text, subject, shut) {
+  const phone = ui.phone, btns = ui.el('div', 'lb-btns');
+  const email = ui.button('Email', true), whatsapp = ui.button('WhatsApp'), copy = ui.button('Copy'), close = ui.button('Close');
+  btns.append(email, whatsapp, copy, close);
+  if (phone) btns.querySelectorAll('button').forEach((b) => { b.style.minWidth = '0'; });
   face.append(btns);
   const open = (url) => { lb.sfx('confirm'); location.href = url; };
   const toEmail = () => open('mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text.replace(/\n/g, '\r\n')));
@@ -10904,10 +11078,7 @@ function checkPlaque(lb, ui, res, inRun) {   // inRun (5f-2): over the paused sc
     };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, pick); else pick();
   };
-  // Close: on the title, back to it; over the paused scene (5f-2), out of the run: the playtest's own page (small, so at once), or in
-  // Barney's copies the page reloaded to the title (the kit has no call for a game to leave a run)
-  const shut = () => { lb.sfx('back'); wakeHold(false); if (!inRun) ui.close(); else if (PLAYTEST) location.href = './'; else location.reload(); };   // 5f-3: the screen may sleep again
-  return { panel, items: [{ el: email, activate: toEmail }, { el: whatsapp, activate: toWhatsApp }, { el: copy, activate: toCopy }, { el: close, activate: shut }], opts: { back: shut } };
+  return [{ el: email, activate: toEmail }, { el: whatsapp, activate: toWhatsApp }, { el: copy, activate: toCopy }, { el: close, activate: shut }];
 }
 </script>
 </body>
