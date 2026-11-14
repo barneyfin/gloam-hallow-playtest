@@ -1142,6 +1142,24 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
 /* kit 0.25.0 (design system 20, PlaqueLine; Barney's choice): on a phone the plaque line is held to one line's height (41px), but every
    name plaque (the boss's name, 64px, and a life gained's, 94px) grows to fit, so its name keeps its rule (version 20's rule) */
 .lb-hud.is-phone .lb-line.is-name>.lb-face{height:auto}
+/* kit 0.30.0: design system version 23's section, as bundle.css has it (12 rules; The Endless Rot) */
+/* ---- version 23 (13 November 2026, The Endless Rot, Gloam Hallow's wave mode; Barney's choices from four design rounds) ---- */
+/* the card between arenas: a life gained, the lantern and Barney's line in gold under the place's words (PlaceCard) */
+.lb-card-life{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px 0 0;font:500 16px/20px var(--font-text);color:var(--gold-light);white-space:nowrap}
+.lb-card-life .lb-life{width:12px;height:17px;flex:none}
+.lb-hud.is-phone .lb-card-life,.lb-plaque.is-phone .lb-card-life{font-size:15px}
+/* a small line under the run's end's near miss: the best kept, the echo stolen; and the news plaque's last line (RunEnd, NewRun) */
+.lb-best-line{margin:0;text-align:center;font:400 15px/19px var(--font-text);color:var(--text-3)}
+.lb-best-line .lb-num{color:var(--text-2)}
+/* the choice of run with four entries: two by two, on a computer and a phone (Modes) */
+.lb-modes.is-row.is-four{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* High scores' two tabs, and the Personal bests table: Run, Name, Best (HighScores) */
+.lb-segments.is-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lb-scores.is-bests th:first-child,.lb-plaque.is-phone .lb-scores.is-bests th:first-child{width:auto}
+.lb-scores.is-bests td{white-space:nowrap}
+.lb-scores.is-bests td:first-child{font-family:var(--font-display);font-size:19px;color:var(--text)}
+.lb-scores.is-bests tr.is-new td:first-child{color:var(--on-brass)}
+.lb-scores.is-bests td.none{font:400 16px var(--font-text);color:var(--text-3)}
 
 </style>
 <script>
@@ -1155,7 +1173,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
 (function () {
   'use strict';
 
-  const VERSION = '0.28.1';
+  const VERSION = '0.33.0';
   // kit 0.18.0: the portal this copy was built for, set by build.py (python lantern-box/kit/build.py --portal crazygames <game>); the
   // arcade's own build leaves it empty. CrazyGames forbids a game's own full-screen button, so there the tile goes (ArchTile, HudTile).
   const PORTAL = '__LB_PORTAL__' === 'crazygames' ? 'crazygames' : '';
@@ -1771,7 +1789,8 @@ return {reset,level:v=>{lvl=v;if(out)out.gain.setTargetAtTime(0.5*v,ctx.currentT
   }
 
   /* ---------- Menu navigation (keyboard + pointer) ----------
-     An item is { el, activate, left, right, focus, menu, noClick }. Keyboard focus follows the selection, so the brass band
+     An item is { el, activate, left, right, up, down, focus, menu, noClick } (kit 0.31.0: up and down, as left and right, for a grid such as
+     the choice of run two by two; without them up and down go to the item before and after). Keyboard focus follows the selection, so the brass band
      (or the arch's glow) is the focus mark; focus() names the element to focus when it is not el. Hover only lightens an
      item's text (the stylesheet); it never moves the selection. */
   function makeNav(items, opts, sfx) {
@@ -1807,8 +1826,8 @@ return {reset,level:v=>{lvl=v;if(out)out.gain.setTargetAtTime(0.5*v,ctx.currentT
         const it = items[i];
         if (opts.keys && opts.keys[e.code]) { if (!e.repeat) opts.keys[e.code](); return true; }   // kit 0.10.0: P resumes
         switch (e.code) {
-          case 'ArrowUp': case 'KeyW': nav.select(i - 1); return true;
-          case 'ArrowDown': case 'KeyS': nav.select(i + 1); return true;
+          case 'ArrowUp': case 'KeyW': if (it && it.up) it.up(); else nav.select(i - 1); return true;   // kit 0.31.0: an item's own up and down (Modes' two by two)
+          case 'ArrowDown': case 'KeyS': if (it && it.down) it.down(); else nav.select(i + 1); return true;
           case 'ArrowLeft': case 'KeyA':
             if (it && it.left) it.left(); else nav.select(i - 1);
             return true;
@@ -2811,7 +2830,7 @@ class Scene{
   }
   play(ctx,s,W,t,camX,o){
     if(o.lvl){ // version 8: a level's rolling ground, as play.js's loopLevel draws it (its still parts into the path's tiles, its candles and shrines live)
-      const T=o.lvl,P=lvBuild(T,s),e=LV[T.lv].edge,st=this.pass!=="live";
+      const T=o.lvl,P=T.ar?arP(T):lvBuild(T,s),e=LV[T.lv].edge,st=this.pass!=="live";   // kit 0.29.0: an arena (version 23) draws as play.js's loopArena: its path and scenery, no pieces
       if(st)rlPath(ctx,T,camX,W,P.G);
       lvDress(ctx,P,camX,W,t,this.pass||null,o.rm);
       if(st){ctx.save();ctx.translate(-camX,0);P.pieces.forEach((pl,i)=>{if(pl.X>camX+W+40||pl.X+pl.w*pl.k<camX-40)return;c2Draw(ctx,pl);const w=P.walks[i];c2Lit(ctx,w,w.x0,w.x1,e);});ctx.restore();}
@@ -4852,6 +4871,49 @@ function lvDress(c,P,cam,W,t,pass,rm){const lv=P.T.lv,G=P.G,gy=q=>G(q+cam),st=pa
   else if(lv==="dawn"){if(st)drawMenhir(c,X,G(x)+2,1,v%3,gy);}
   else{if(v===5){if(lp)drawShrine(c,X,G(x)+2,t,!!rm,gy);}else if(st)drawFerns(c,X,x,110+v*10,v,G);}}}
 
+/* ---------- kit 0.29.0: The Endless Rot's arenas (design system version 23, play.js 1.10.0's AR_LEN, ARENAS, arT and arP) ----------
+   Four slope-only terrains, one for each place, 1,800 long, in the same form as lvTerrain's (points [x, share of the place's maximum
+   height, kind], "s" a slope, "f" flat), with no banks, no pits and no pieces, so nothing stops a monster crossing from one end to the
+   other. Beyond each end the ground carries on flat at the end's height. ARENAS is play.js's, word for word (its waves, shape and mons
+   are the design's words and review monsters). The kit: arT takes a game's own points too (the same rules), and its length is then the
+   last point's x; arP is built from the terrain rather than the place, so a game's own points get their own scenery. */
+const AR_LEN = 1800, AR_VIEW = 960;
+const ARENAS = {
+  night: { waves: "Waves 1 to 3", shape: "Low swells",
+    pts: [[0, 0, "f"], [120, 0, "s"], [520, 0.22, "s"], [900, 0.08, "s"], [1300, 0.26, "s"], [1680, 0, "f"], [1800, 0, "f"]],
+    mons: [["crawlerP", 380], ["crawlerP", 1420], ["bat2", 1180]] },
+  storm: { waves: "Waves 4 to 6", shape: "The climbing street",
+    pts: [[0, 0, "f"], [120, 0, "s"], [640, 0.75, "s"], [1000, 0.45, "s"], [1320, 0.9, "s"], [1680, 0, "f"], [1800, 0, "f"]],
+    mons: [["crawlerP", 300], ["hatmawP", 1560], ["crawlerP", 1150], ["bat2", 520]] },
+  dawn: { waves: "Waves 7 to 9", shape: "The long hill",
+    pts: [[0, 0, "f"], [260, 0, "s"], [900, 1, "s"], [1540, 0, "f"], [1800, 0, "f"]],
+    mons: [["ghoulP", 430], ["crawlerP", 640], ["hatmawP", 1330], ["crawlerP", 1500], ["bat2", 1120]] },
+  mist: { waves: "Waves 10 to 12", shape: "The hollow",
+    pts: [[0, 0.9, "f"], [120, 0.9, "s"], [520, 0.1, "s"], [900, 0.35, "s"], [1280, 0.05, "s"], [1680, 1, "f"], [1800, 1, "f"]],
+    mons: [["walkerP", 330], ["crawlerP", 560], ["ghoulP", 1240], ["hatmawP", 1500], ["crawlerP", 1650], ["bat2", 700]] } };
+const AR_ORDER = ["night", "storm", "dawn", "mist"];
+const _arT = {}, _arP = {};
+function arCheck(p){ // the kit: a game's own points follow the design's rules, or the game is told why
+  const bad=(why)=>{throw new Error('Lantern Box: an arena\'s points '+why+' (Ground, version 23).');};
+  if(!Array.isArray(p)||p.length<2)bad("are a list of two or more [x, height, kind]");
+  p.forEach((q,i)=>{if(!Array.isArray(q)||!isFinite(q[0])||!isFinite(q[1]))bad("are each [x, height, kind], with numbers for x and height");
+    if(q[2]!=="s"&&q[2]!=="f")bad('are slopes ("s") and flats ("f") only: no banks, so nothing stops a monster');
+    if(q[1]<0||q[1]>1)bad("give each height as a share of the place's maximum, from 0 to 1");
+    if(i===0&&q[0]!==0)bad("start at x 0");if(i&&q[0]<=p[i-1][0])bad("go from left to right");});}
+function arT(lv,own) {
+  const id=own?lv+"-"+JSON.stringify(own):lv;
+  if (_arT[id]) return _arT[id];
+  if(own)arCheck(own);
+  const p = own || ARENAS[lv].pts, len = own ? p[p.length - 1][0] : AR_LEN, pts = [[-4000, p[0][1], "f"]].concat(p.map((q) => q.slice()), [[len + 4000, p[p.length - 1][1], "f"]]);
+  return _arT[id] = { key: "arena-" + id, lv, pts, pits: [], max: RL_MAX[lv], seed: RL_SEED[lv] + 300, rough: RL_ROUGH[lv], len, arena: len, secs: [], cps: [], ar: true };
+}
+function arP(T) {   // the arena's ground and its scenery (drawn only; it blocks nothing). No pieces.
+  if (_arP[T.key]) return _arP[T.key];
+  const lv = T.lv, G = (x) => tGround(T, x), r = mvRng(RL_SEED[lv] * 31 + 7), gap = { night: [110, 190], storm: [360, 480], dawn: [300, 460], mist: [420, 600] }[lv], dress = [];
+  for (let x = 90; x < T.len - 60; x += gap[0] + r() * (gap[1] - gap[0])) dress.push([x, Math.floor(r() * 6)]);
+  return _arP[T.key] = { T, G, pieces: [], walks: [], dress };
+}
+
 /* ---------- the wanderer (4c-3): from wand.js, the lantern and the drawing helpers the posable figure uses ---------- */
 const W_INK="#060508";let W_RED="#b3261e";   // version 12: let, so setBelt can change it
 function wTaper(x,s){const x1=s[0],y1=s[1],x2=s[2],y2=s[3],w1=s[4],w2=s[5],dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
@@ -5943,6 +6005,29 @@ function makeTools(env){
       lvBuild(T,env.k()); // paint the pieces now, not in the first frame
       return T.api;
     },
+    // kit 0.29.0 (design system version 23, Ground): The Endless Rot's arena for a place, the design's slope-only shape (ARENAS), or the
+    // game's own points ([x, share of the place's maximum height, "s" or "f"], from x 0, left to right; no banks). It is drawn and stood on
+    // as a level is (world.begin(ctx, { level: A, camX })), with the same ground and rise, and none of a level's pits, banks, pieces,
+    // checkpoints or boss's arena. Beyond each end the ground carries on flat at the end's height, for monsters to walk in over; holding
+    // him and the camera between the ends is the game's, as in a boss's arena.
+    arenas:AR_ORDER.slice(),
+    arena(place,pts){
+      if(!LV[place])throw new Error('Lantern Box: no place called "'+place+'".');
+      const T=arT(place,pts);
+      if(!T.api){const A=ARENAS[place];
+        T.api={
+          place,kind:"arena",length:T.len,arena:T.len,                                     // arena: its length, as there is no boss's arena
+          shape:pts?"":A.shape,                                                            // the design's name for the shape ("Low swells"), or "" for a game's own
+          points:T.pts.slice(1,-1).map(q=>q.slice()),                                      // the points it was made from
+          sections:[],checkpoints:[],pits:[],banks:[],
+          ground:x=>tGround(T,x),                                                          // the ground's line at x, in picture lines (bigger is lower), beyond the ends too
+          rise:x=>tRise(T,x),                                                              // how far the camera rises with the ground at x (held at the ends' own beyond them)
+          pit:()=>false,
+          pieces:()=>[],
+          _T:T};}
+      arP(T); // its scenery now, not in the first frame
+      return T.api;
+    },
     begin(ctx,o){
       o=o||{};
       const L=o.level&&o.level._T?o.level:null,S=env.k(),level=L?L.place:(o.place||"night");
@@ -6092,7 +6177,19 @@ function makeTools(env){
     spark(from,to,u){ // a gold spark between two points ({ x, y }), u 0 to 1: the return at a checkpoint sends one from its glass to his lantern (0.3 s)
       const f=frame("spark");cpSpark(f.ctx,[from.x-f.camX,from.y],[to.x-f.camX,to.y],Math.max(0,Math.min(1,u)));
     },
+    // kit 0.32.0 (design system version 23, loopWave): an ember warning on the ground at x, cracked, as The Tentacled Skull's crawlers
+    // come through, drawn where it is called (under what is drawn after it), for a game's own monsters to rise through. o: a (0 to 1, how
+    // strong; the design fades it in over 0.15 s and out over the rise and 0.3 s more), w (its width, 70 as the design's), crack (1, as the
+    // skull's call; 0 for none). Its cracks are seeded by x along the path, so they hold still as the camera moves.
+    warning(x,o){
+      const f=frame("warning");o=o||{};
+      const a=clamp(o.a==null?1:o.a,0,1);if(a<=0)return;
+      const c=f.ctx;c.save();c.translate(-f.camX,0);bsWarn(c,x,f.gy,o.w==null?70:o.w,a,f.t,o.crack==null?1:o.crack);c.restore();
+    },
     monster(o){ // o: kind, x, y, ph (its pace, so neighbours differ), id (a monster's own name), defeat (0 to 1, over 1.6 s), seed, facing (kit 0.8.1)
+      // rise: seconds since it began to rise out of the ground (0.35 s from 26 below, with dust: the skull's crawlers); kit 0.32.0: with
+      // riseLen (seconds, the design's 0.6) and riseDepth (its own height if left out: 104 for a ghoul, 37 for a crawler), The Endless
+      // Rot's deeper rise through a warning (version 23)
       // version 8 (4c-5a): the posable monsters, always. attack { name, t (seconds since its signal began), dir, dx, dy (the flyer's dive) }: names in
       // world.ATTACKS; it moves the monster from x (returned as dx, dy) and says its phase. hit: seconds since a blow landed (0.13 s: it jolts back a
       // puppet step and its ember rim flares once; a one-hit monster then breaks up, which is the game's defeat).
@@ -6112,7 +6209,14 @@ function makeTools(env){
       const out=at?{phase:at.phase,dx,dy}:{phase:null,dx,dy};
       const c=f.ctx,Xs=Math.round(X*s)/s;   // mirrored about a whole device pixel, so its painted picture stays sharp
       if(fc===1){c.save();c.translate(Xs,0);c.scale(-1,1);c.translate(-Xs,0);}
-      if(o.rise!=null&&o.rise<0.35){ // version 8 (4c-5b): rising out of the ground (the skull's crawlers): 0.35 s, its legs still, dust bursting
+      if(o.rise!=null&&o.riseLen!=null&&o.rise<o.riseLen){ // kit 0.32.0 (version 23, loopWave): The Endless Rot's rise through a warning: riseLen s
+        // (the design's 0.6), up from riseDepth below, eased, drawn only above the ground's own line within 100 of it, as play.js clips
+        // it; no dust (the design draws none). Left out, the depth is the monster's own height and one (MON_BOX): the design's 104 for a
+        // ghoul, 37 for a crawler, so each starts just out of sight. The clip follows the ground, so it is mirrored with a monster facing right
+        const rv=clamp(o.rise/o.riseLen,0,1),up=rv*rv*(3-2*rv),d=o.riseDepth==null?1-MON_BOX[o.kind][1]:o.riseDepth,mx=X1=>fc===1?2*Xs-X1:X1;m.Y+=(1-up)*d;
+        c.save();c.beginPath();c.moveTo(mx(x-100-f.camX),f.gy(x-100)+2);for(let q=x-100;q<=x+100;q+=8)c.lineTo(mx(q-f.camX),f.gy(q)+2);
+        c.lineTo(mx(x+100-f.camX),-2000);c.lineTo(mx(x-100-f.camX),-2000);c.closePath();c.clip();scene.monster(c,s,m,f.t,f.opt,hit);c.restore();}
+      else if(o.rise!=null&&o.rise<0.35){ // version 8 (4c-5b): rising out of the ground (the skull's crawlers): 0.35 s, its legs still, dust bursting
         const rv=clamp(o.rise/0.35,0,1),gy=f.gy(x);m.Y+=(1-rv)*26;m.P=Object.assign({t:1.0},m.P);
         c.save();c.beginPath();c.rect(X-80,-2000,160,2000+gy+4);c.clip();scene.monster(c,s,m,f.t,f.opt,hit);c.restore();fxBurst(c,X,gy-2,1,rv,"#3a2a22");}
       else if(o.defeat==null)scene.monster(c,s,m,f.t,f.opt,hit);
@@ -6243,7 +6347,7 @@ function build(el,phone,o){o=o||{};if(!defsDone){document.body.insertAdjacentHTM
     <div class="lb-bossbar" role="meter" aria-valuemin="0" aria-valuemax="100" hidden><p class="lb-bossbar-name"></p><div class="lb-bossbar-edge"><div class="lb-bossbar-track"><i class="trace"></i><i class="fill"></i></div></div></div>
     <div class="lb-plaque is-hud lb-line" hidden><div class="lb-face"><svg class="pic" viewBox="0 0 24 24" aria-hidden="true"></svg><span class="lb-line-text"></span></div></div>
     <div class="lb-plaque is-hud lb-line is-name" hidden><div class="lb-face"><span class="lb-line-text"></span><div class="lb-rule" aria-hidden="true"><i></i></div><span class="lb-line-sub" hidden></span></div></div>
-    <div class="lb-card" hidden><div class="lb-plaque${phone?" is-phone":""}"><div class="lb-face is-centred"><h2 class="lb-heading"></h2><p class="lb-card-again" hidden></p><div class="lb-rule" aria-hidden="true"><i></i></div><p class="lb-card-sub"></p><p class="lb-card-daily" hidden><span class="lb-daily-mark"></span>echo for the first run today</p></div></div></div>
+    <div class="lb-card" hidden><div class="lb-plaque${phone?" is-phone":""}"><div class="lb-face is-centred"><h2 class="lb-heading"></h2><p class="lb-card-again" hidden></p><div class="lb-rule" aria-hidden="true"><i></i></div><p class="lb-card-sub"></p><p class="lb-card-life" hidden></p><p class="lb-card-daily" hidden><span class="lb-daily-mark"></span>echo for the first run today</p></div></div></div>
     ${o.touch?`<div class="lb-touch" aria-hidden="true">
       <div class="lb-stick">${oct(112,"base")}<svg class="chev" viewBox="0 0 112 112">${ICON.stick}</svg><div class="lb-knob">${oct(50,"knob")}<i></i></div></div>
       <div class="lb-thumb"></div>
@@ -6282,10 +6386,12 @@ function lifeGain(l,g,f,rg,u){const rm=OPTS.rm,st=Math.floor(u/0.1)*0.1,p=Math.m
   if(!rg)return;if(rm||OPTS.fxOff||u<0.42||u>=1.38){rg.style.opacity="0";return;}
   const a=u<0.66?0.9*(u-0.42)/0.24:0.9*(1-(u-0.66)/0.72),r=u<0.66?2+2*(u-0.42)/0.24:4+7*(u-0.66)/0.72;rg.style.opacity=a.toFixed(3);rg.setAttribute("r",r.toFixed(2));}
 function setCard(cd,card){const on=!!(card&&card.a>0);if(cd.hidden===on)cd.hidden=!on;if(!on)return;
-  setOnce(cd,"lv",card.lv+"|"+(card.again||"")+"|"+(card.daily||""),()=>{const v=card.lv,ag=cd.querySelector(".lb-card-again"),dy=cd.querySelector(".lb-card-daily");cd.querySelector(".lb-heading").textContent=CARDS[v][0];cd.querySelector(".lb-card-sub").textContent=CARDS[v][1];
+  const lf=card.life||null;   /* kit 0.30.0 (version 23, PlaceCard): { text, lantern }, one gold line under the place's words */
+  setOnce(cd,"lv",card.lv+"|"+(card.again||"")+"|"+(card.daily||"")+(lf?"|"+(lf.lantern?"L":"")+lf.text:""),()=>{const v=card.lv,ag=cd.querySelector(".lb-card-again"),dy=cd.querySelector(".lb-card-daily"),li=cd.querySelector(".lb-card-life");cd.querySelector(".lb-heading").textContent=CARDS[v][0];cd.querySelector(".lb-card-sub").textContent=CARDS[v][1];
     ag.textContent=card.again||"";ag.hidden=!card.again;
     if(dy){dy.hidden=!card.daily;dy.firstChild.textContent=card.daily?"\u00d7"+card.daily:"";}   /* kit 0.22.0 (version 18, PlaceCard): the day's double */
-    cd.setAttribute("aria-label",CARDS[v][0]+(card.again?", "+card.again:"")+", "+CARDS[v][1]+(card.daily?", \u00d7"+card.daily+" echo for the first run today":""));});cd.style.opacity=String(card.a);}   /* kit 0.17.0: again */
+    if(li){li.hidden=!lf;li.innerHTML=lf&&lf.lantern?ICON.life():"";if(lf)li.append(document.createTextNode(lf.text));}
+    cd.setAttribute("aria-label",CARDS[v][0]+(card.again?", "+card.again:"")+", "+CARDS[v][1]+(card.daily?", \u00d7"+card.daily+" echo for the first run today":"")+(lf?", "+lf.text:""));});cd.style.opacity=String(card.a);}   /* kit 0.17.0: again */
 // round 13: one socket. Kept: the flask grows in from 0.6 with one glint passing over it (0.4 s); Reduce motion fades it in, Effects off
 // leaves out the glint's light. Drunk: the liquid drains in 0.35 s, then the faint outline; Reduce motion fades the liquid out instead.
 const OPTS={rm:false,fxOff:false};
@@ -6334,7 +6440,8 @@ function set(hud,st){const q=s=>hq(hud,s);
   const cast=q(".b-cast");if(cast){cast.classList.toggle("is-empty",!n);cast.classList.toggle("is-short",!!short);picFor(hq(cast,".ic"),kind);}
   setOnce(q(".lb-vitals"),"lab",`Health ${hp} per cent, armour ${st.pips} of 3, mana ${mp} per cent, ${st.lives} ${st.lives===1?"life":"lives"} left`,v=>q(".lb-vitals").setAttribute("aria-label",v));
   hqa(hud,".lb-potion").forEach(b=>setPotion(b,st));
-  const ctr=q(".lb-counter");if(ctr&&st.wisps!=null)setOnce(ctr,"w",st.wisps,v=>{const s=String(v).padStart(4,"0");ctr.querySelector(".lb-counter-num").textContent=s;ctr.setAttribute("aria-label",v+" echo");});
+  const ctr=q(".lb-counter");if(ctr){const lab=st.counter||"Echo";setOnce(ctr,"cl",lab,v=>{ctr.querySelector(".lb-counter-label").textContent=v;ctr._w=undefined;});   // version 23: the label from the state
+    if(st.wisps!=null)setOnce(ctr,"w",st.wisps,v=>{const s=String(v).padStart(4,"0");ctr.querySelector(".lb-counter-num").textContent=s;ctr.setAttribute("aria-label",v+" "+lab.toLowerCase());});}   // kit 0.30.0: play.js 1.10.0's, word for word
   const ha=st.hudA==null?1:st.hudA;[".lb-hud-left",".lb-hud-right",".lb-touch"].forEach(sl=>{const e=q(sl);if(e)setOnce(e,"ha",ha.toFixed(2),v=>e.style.opacity=v);});
   const ln=q(".lb-line:not(.is-name)");if(ln)setLine(ln,st.line);const nm=q(".lb-line.is-name");if(nm)setLine(nm,st.name&&st.name.u<2.6?{kind:null,text:st.name.name,sub:st.name.sub,gain:st.name.gain,u:st.name.u}:null);const cd=q(".lb-card");if(cd)setCard(cd,st.card);
   const bb=q(".lb-bossbar");if(bb){const on=!!(st.boss&&st.boss.a>0&&ha>0);if(bb.hidden===on)bb.hidden=!on;
@@ -6473,6 +6580,33 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       return (Array.isArray(t) ? t : []).filter((r) => r && typeof r.s === 'number').sort((a, b) => b.s - a.s).slice(0, 10);
     };
     const bestScore = () => { const t = readScores(); return t.length ? t[0].s : 0; };
+    /* kit 0.31.0 (design system version 23, HighScores): Personal bests. bests: { table, runs: [{ id, name, yours }] } in the config gives High
+       scores two tabs, the table (table: its name, "The Bare Reckoning") and Personal bests, one row for each run in runs (Run, Name, Best).
+       A best is the most of something in one run (n), with words after its figure ("felled · wave 7", "echo"); yours: true gives that
+       run's end the line "Your best: ..." when it falls short. The rows are kept on this device beside the table, under their own key
+       (lanternbox.bests.<game>, { id: { n, w, i, d } }), never the table's, so the arcade's website and a portal never take them for scores.
+       A best is beaten by more than it; the first run of a kind above 0 is a best (Barney, 14 November 2026: reading 8); an equal one is
+       not. It takes the stored initials, or "---" when none are stored (Barney, 14 November 2026); the run's end then asks for initials. */
+    const bestsCfg = cfg.bests && Array.isArray(cfg.bests.runs) && cfg.bests.runs.length
+      ? { table: String(cfg.bests.table || 'High scores'), runs: cfg.bests.runs.map((r) => ({ id: String(r.id), name: String(r.name || r.id), yours: !!r.yours })) } : null;
+    const bestKey = () => 'lanternbox.bests.' + gameId;
+    const readBests = () => asObject(store.get(bestKey(), {}));
+    const storedInitials = () => { const v = store.get('retrokit.initials', null); return typeof v === 'string' && /^[A-Z0-9.]{3}$/i.test(v) ? v.toUpperCase() : null; };
+    function bestOf(id) {
+      const r = readBests()[id];
+      return r && typeof r.n === 'number' ? { n: r.n, words: String(r.w || ''), initials: String(r.i || '---'), date: String(r.d || '') } : null;
+    }
+    function offerBest(id, n, words) {   // keeps n as the run's best if it beats the one kept; true if it did
+      id = String(id);
+      if (!bestsCfg || !bestsCfg.runs.some((r) => r.id === id)) return false;
+      n = Math.max(0, Math.floor(+n || 0));
+      const kept = bestOf(id);
+      if (!(n > 0 && (!kept || n > kept.n))) return false;
+      const all = readBests();
+      all[id] = { n: n, w: String(words || ''), i: storedInitials() || '---', d: new Date().toISOString().slice(0, 10) };
+      store.set(bestKey(), all);
+      return true;
+    }
 
     /* ----- DOM ----- */
     document.documentElement.lang = document.documentElement.lang || 'en';
@@ -6514,7 +6648,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       shakeAmt: 0,
       shakeT: 0,
       errored: false,
-      h8: { pips: 0, lives: 3, slots: 3, gainFx: null, spells: [], sel: 0, cost: 0, pipFx: null, lifeFx: null, flipFx: null, lines: [], line: null, name: null, boss: null, card: null, hudA: 1, fade: 0, potions: { health: 0, mana: 0 }, potCap: { health: 1, mana: 1 }, potFx: { health: null, mana: null } }
+      h8: { pips: 0, lives: 3, slots: 3, gainFx: null, spells: [], sel: 0, cost: 0, pipFx: null, lifeFx: null, flipFx: null, lines: [], line: null, name: null, boss: null, card: null, counter: null, hudA: 1, fade: 0, potions: { health: 0, mana: 0 }, potCap: { health: 1, mana: 1 }, potFx: { health: null, mana: null } }
     };
     function after(seconds, fn) { state.timers.push({ at: state.time + seconds, fn: fn }); }
     function shake(amount, seconds) {   // the picture only, in its lines; the HUD never moves
@@ -6638,12 +6772,16 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
        2026): three ways to roll, all always on, the pull first: the knob pulled down to the side (at least 70% of its travel, 30 to 75
        degrees below level, HUD8.ROLL_ZONE) rolls him once towards that side, turning him first; it re-arms only once the knob comes back
        inside 52.5% or leaves 22 to 83 degrees, and shares the flick's rest; then the flick, then the double tap. Straight down does nothing.
+       Kit 0.33.0 (Barney's play of The Endless Rot, 14 November 2026: "whenever I put my thumb down to face the other way I end up rolling
+       in the direction I am facing and away from the crawler"): a thumb put down and pushed to turn never rolls. No flick in the first
+       0.3 s after the thumb lands (FLICK_LAND); up and down are read from where the thumb landed, so a thumb landing near the bottom or
+       top edge, where the stick is drawn further in to fit (s.vy), no longer starts with its knob pulled down (a sideways push rolled him)
+       or up; and the double tap no longer rolls. Two ways to roll, the pull and the flick.
        The three buttons press jump, attack and cast; a tap on the spell's
        socket presses switch, and (kit 0.9.0) a tap on a potion's socket drinkHealth or drinkMana. A tap on a socket is the socket's own:
        it never reaches the canvas, so it never starts the stick or counts towards a double tap. */
     const FLICK_PX = 40, FLICK_MS = 120, FLICK_REST = 350;   // a flick: the thumb 40 px sideways within 0.12 s (starting figures, to tune in play)
-    const TAP_MS = 250, TAP_PX = 14, DTAP_MS = 300, DTAP_PX = 70;   // kit 0.8.2: a tap is shorter than 0.25 s and moves under 14 px; a double tap is
-                                                              // a second touch within 0.3 s of the first tap's end and within 70 px of it
+    const FLICK_LAND = 300;   // kit 0.33.0: no flick this soon after the thumb lands (starting figure)
     const tc = { on: false, held: new Set(), just: new Set(), dirs: { left: false, right: false, up: false },
       stick: { id: null, x: 0, y: 0, dx: 0, dy: 0, hist: [], rest: 0, armed: true, side: 0 } };   // kit 0.26.0: armed, side (the pull)
     function prepareInput() {
@@ -6695,7 +6833,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       const s = tc.stick;
       s.id = null; s.dx = 0; s.dy = 0; s.hist = []; s.armed = true; s.side = 0;
       const h = hudNodes && hudNodes.full;
-      if (h) { HUD8.stickShow(h, s.x, s.y, 0, 0, 0, 0); h.querySelectorAll('.lb-touch-btn.is-pressed').forEach((b) => { b.classList.remove('is-pressed'); b.__pid = null; }); }
+      if (h) { HUD8.stickShow(h, s.x, s.vy != null ? s.vy : s.y, 0, 0, 0, 0); h.querySelectorAll('.lb-touch-btn.is-pressed').forEach((b) => { b.classList.remove('is-pressed'); b.__pid = null; }); }
     }
     function hudAt(h, e) { const r = h.getBoundingClientRect(), k = r.width / (h.offsetWidth || 1); return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; }
     function stickDown(e) {   // a thumb landing in the left half (play.js's live stick)
@@ -6706,11 +6844,12 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
       s.id = e.pointerId;
       s.x = Math.max(60, Math.min(W * 0.5 - 60, x));
-      s.y = Math.max(70, Math.min(H - 60, y));
+      s.vy = Math.max(70, Math.min(H - 60, y));   // drawn where it fits
+      s.y = y;                                     // kit 0.33.0: and read from where the thumb landed, up and down
       s.hist = [];
-      // kit 0.8.2: the second touch of a double tap rolls (as a flick does, and not again within its rest)
-      const now = performance.now(), lt = s.lastTap;
-      if (lt && now - lt.t < DTAP_MS && Math.hypot(x - lt.x, y - lt.y) < DTAP_PX && now >= s.rest) { tc.just.add('roll'); s.rest = now + FLICK_REST; s.lastTap = null; }
+      // kit 0.8.2 to 0.32.0: the second touch of a double tap rolled; kit 0.33.0: no longer (it rolled him the way he faced as he put his
+      // thumb down again to turn)
+      const now = performance.now();
       s.down = { t: now, x, y };
       s.armed = true; s.side = 0;   // kit 0.26.0
       stickMove(e);
@@ -6724,7 +6863,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       const dd = Math.hypot(dx, dy), r = 31;
       if (dd > r) { dx *= r / dd; dy *= r / dd; }
       s.dx = dx; s.dy = dy;
-      HUD8.stickShow(h, s.x, s.y, dx, dy, 1, 0);
+      HUD8.stickShow(h, s.x, s.vy != null ? s.vy : s.y, dx, dy, 1, 0);
       // design system 21: pulled down to the side, at least 70% out and 30 to 75 degrees below level, rolls him that way, once per pull
       const Z = HUD8.ROLL_ZONE, dep = Math.hypot(dx, dy) / r, ang = dy > 0 ? Math.atan2(dy, Math.abs(dx)) * 180 / Math.PI : -90;
       const inside = HUD8.inRollZone(dx, dy);
@@ -6735,16 +6874,15 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       s.hist.push([now, x, y]);
       while (s.hist.length > 1 && now - s.hist[0][0] > FLICK_MS) s.hist.shift();
       const o = s.hist[0], fx = x - o[1], fy = y - o[2];
-      if (now >= s.rest && Math.abs(fx) >= FLICK_PX && Math.abs(fx) >= 2 * Math.abs(fy)) { tc.just.add('roll'); s.rest = now + FLICK_REST; s.hist = [[now, x, y]]; }
+      // kit 0.33.0: not as the thumb lands (FLICK_LAND)
+      if (now >= s.rest && (!s.down || now - s.down.t >= FLICK_LAND) && Math.abs(fx) >= FLICK_PX && Math.abs(fx) >= 2 * Math.abs(fy)) { tc.just.add('roll'); s.rest = now + FLICK_REST; s.hist = [[now, x, y]]; }
     }
     function stickUp(e) {
       const s = tc.stick;
       if (s.id == null || e.pointerId !== s.id) return false;
       s.id = null; s.dx = 0; s.dy = 0; s.hist = []; s.armed = true; s.side = 0;
       const h = hudNodes && hudNodes.full;
-      // kit 0.8.2: a short, still touch is a tap, remembered for a double tap
-      if (h && s.down) { const [x, y] = hudAt(h, e), now = performance.now(); s.lastTap = now - s.down.t < TAP_MS && Math.hypot(x - s.down.x, y - s.down.y) < TAP_PX ? { t: now, x: s.down.x, y: s.down.y } : null; }
-      if (h) HUD8.stickShow(h, s.x, s.y, 0, 0, 0, 0);   // nothing shows at rest
+      if (h) HUD8.stickShow(h, s.x, s.vy != null ? s.vy : s.y, 0, 0, 0, 0);   // nothing shows at rest
       return true;
     }
     const worldX = (e) => e.clientX / (V.w || 1) * V.W;
@@ -6961,8 +7099,10 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       hudNodes.health.style.setProperty('--v', pc(state.health) + '%');
       if (hudNodes.mana) hudNodes.mana.style.setProperty('--v', pc(state.mana) + '%');
       hudNodes.vitals.setAttribute('aria-label', 'Health ' + pc(state.health) + ' per cent' + (hasMana ? ', mana ' + pc(state.mana) + ' per cent' : ''));
-      hudNodes.num.textContent = pad4(state.score);
-      hudNodes.counter.setAttribute('aria-label', state.score + ' echo');
+      const cn = h8.counter, cnN = cn ? cn.n : state.score, cnL = cn ? cn.label : 'Echo';   // kit 0.30.0: lb.hud.counter's label and count
+      if (hudNodes.lab !== cnL) { hudNodes.lab = cnL; const le = hudNodes.counter.querySelector('.lb-counter-label'); if (le) le.textContent = cnL; }
+      hudNodes.num.textContent = pad4(cnN);
+      hudNodes.counter.setAttribute('aria-label', cnN + ' ' + cnL.toLowerCase());
     }
     // version 8: the full HUD's moments, timed on the kit's clock as the design system times them: a pip cracks (0.4 s) or fills (0.5 s), a
     // life's lantern gutters out (0.8 s), the spell turns over (0.24 s), each plaque line shows for 2 s in turn, the boss's name 2.6 s; the boss
@@ -6970,6 +7110,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
     const h8 = state.h8;
     function h8State() {
       const T = state.time, fx = (f) => (f && T - f.t0 < f.len ? f : null), st = { hp: state.health, mp: state.mana, pips: h8.pips, lives: h8.lives, spells: h8.spells, sel: h8.sel, cost: h8.cost, wisps: state.score, hudA: h8.hudA };
+      if (h8.counter) { st.counter = h8.counter.label; st.wisps = h8.counter.n; }   // kit 0.30.0 (version 23, HUD): the counter's own label and count
       // kit 0.10.2: a moment for each pip changing, so several can crack together (one waiting to start shows whole)
       const pfs = (h8.pipFx || []).filter((f) => T - f.t0 < f.len); if (pfs.length) st.pipFx = pfs.map((f) => ({ i: f.i, kind: f.kind, u: Math.max(0, (T - f.t0) / f.len) }));
       const lf = fx(h8.lifeFx); if (lf) st.lifeFx = { i: lf.i, u: T - lf.t0 };
@@ -6997,7 +7138,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
         const a = b.out != null ? 1 - (T - b.out) / 0.4 : Math.min(1, (T - b.t0) / 0.4);
         if (b.out != null && a <= 0) h8.boss = null;
         else {
-          const fill = Math.min(1, (T - b.t0) / 1), hp = Math.min(b.hp, fill), drain = b.hitT == null ? 1 : 1 - clamp((T - b.hitT - 0.35) / 0.6, 0, 1);
+          const fill = b.full ? 1 : Math.min(1, (T - b.t0) / 1), hp = Math.min(b.hp, fill), drain = b.hitT == null ? 1 : 1 - clamp((T - b.hitT - 0.35) / 0.6, 0, 1);   // kit 0.30.0: a wave's bar appears full (BossBar, version 23)
           st.boss = { name: b.name, hp: hp, trace: Math.max(hp, hp + (b.trace - b.hp) * drain), a: a };
         }
       }
@@ -7009,7 +7150,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
         if (t >= 3) { h8.card = null; if (c.onDone) c.onDone(); }
         else {
           const black = t < 0.5 ? t / 0.5 : t < 1.9 ? 1 : 1 - (t - 1.9) / 1.1;
-          st.card = { lv: c.place, again: c.again, daily: c.daily, a: t < 0.5 ? 0 : t < 0.9 ? (t - 0.5) / 0.4 : t < 2.4 ? 1 : 1 - (t - 2.4) / 0.6 };
+          st.card = { lv: c.place, again: c.again, daily: c.daily, life: c.life, a: t < 0.5 ? 0 : t < 0.9 ? (t - 0.5) / 0.4 : t < 2.4 ? 1 : 1 - (t - 2.4) / 0.6 };
           st.hudA = Math.min(st.hudA, t < 0.5 ? 1 - t / 0.5 : t < 1.9 ? 0 : (t - 1.9) / 1.1);
           fadeEl.style.opacity = String(Math.max(black, h8.fade));
         }
@@ -7049,14 +7190,20 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
         if (h8.line) { h8.lines.unshift({ kind: h8.line.kind, text: h8.line.text, sub: h8.line.sub, gain: h8.line.gain, quiet: h8.line.quiet }); h8.line = null; }
         h8.name = { name: String(name), t0: state.time };
       },
+      // kit 0.30.0 (version 23, BossBar): o.full shows the bar already at its share as it appears (fading in, 0.4 s), as a wave's bar does,
+      // where a boss's fills from empty as it arrives (1 s). The Endless Rot's bar is named "Wave 4", its share the wave's monsters still to fall
       boss(o) { // the boss bar: { name, hp 0 to 1 }, or null when the fight ends (it fades)
         if (!o) { if (h8.boss && h8.boss.out == null) h8.boss.out = state.time; return; }
         const hp = clamp(+o.hp, 0, 1), b = h8.boss;
-        if (!b || b.name !== o.name || b.out != null) h8.boss = { name: String(o.name), hp: hp, trace: hp, t0: state.time, hitT: null };
+        if (!b || b.name !== o.name || b.out != null) { h8.boss = { name: String(o.name), hp: hp, trace: hp, t0: state.time, hitT: null }; if (o.full) h8.boss.full = true; }
         else if (hp < b.hp) { const shown = b.hitT == null ? b.hp : b.hp + (b.trace - b.hp) * (1 - clamp((state.time - b.hitT - 0.35) / 0.6, 0, 1)); b.trace = Math.max(shown, b.hp); b.hitT = state.time; b.hp = hp; }
         else b.hp = hp;
       },
       fade(a) { h8.hudA = clamp(+a, 0, 1); syncHud(); },                                // the HUD's own fade (a tap on the spell's socket presses input.pressed.switch)
+      // kit 0.30.0 (design system version 23, HUD and WispCounter): counter(label, n) shows n on the counter under that label, in place of the
+      // run's echo ("Felled": "41 felled" to a screen reader); counter(null) gives it back to echo. Each run starts with echo. The echo is
+      // still kept (lb.addWisps, lb.wisps), only out of sight
+      counter(label, n) { h8.counter = label == null ? null : { label: String(label), n: Math.max(0, n | 0) }; syncHud(); },
       // kit 0.9.0 (design system version 11; potions: true in the config): one health and one mana potion kept, in two sockets under the plaque
       // kit 0.11.0 (version 12): potions(health, mana) takes counts (true is 1); potCap(health, mana) the sockets bought, 1 to 3 (a pip for each
       // once there are two); keep fills one more socket, drink empties one
@@ -7081,7 +7228,12 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
     // take(id) } }): the cards appear with the card's plaque, under it; the card holds, play stopped, once it is up (1.2 s) until one is
     // taken (left and right choose, Enter takes; a click or a tap takes one at once), then runs on as usual
     // kit 0.17.0: o.again (true, or the words) puts "Again, harder" under the place's name, as the second loop's cards say (PlaceCard, version 13)
-    function placeCard(place, onBlack, onDone, o) { h8.card = { place: place, t0: state.time, onBlack: onBlack || null, onDone: onDone || null, called: false, pick: o && o.pick && Array.isArray(o.pick.options) && o.pick.options.length ? o.pick : null, sel: 0, taken: false, again: o && o.again ? (o.again === true ? 'Again, harder' : String(o.again)) : null, daily: o && o.daily > 1 ? Math.round(+o.daily) : null }; sfx('placeCard'); syncHud(); }   // with its low toll; kit 0.22.0: o.daily, the day's double (2)
+    // kit 0.30.0 (version 23, PlaceCard): o.life puts one gold line under the place's words: true for the life's lantern and "Another chance
+    // is claimed", the words alone with the lantern, or { text, lantern: false } for words without it ("10 echo" at five lives). The card
+    // holds only for a pick, so with a life and no pick it runs its usual 3 s. Its sounds are the game's (the echo's, for "10 echo")
+    function placeCard(place, onBlack, onDone, o) { h8.card = { place: place, t0: state.time, onBlack: onBlack || null, onDone: onDone || null, called: false, pick: o && o.pick && Array.isArray(o.pick.options) && o.pick.options.length ? o.pick : null, sel: 0, taken: false, again: o && o.again ? (o.again === true ? 'Again, harder' : String(o.again)) : null, daily: o && o.daily > 1 ? Math.round(+o.daily) : null, life: cardLife(o && o.life) }; sfx('placeCard'); syncHud(); }
+    function cardLife(v) { if (!v) return null; if (v === true) return { text: 'Another chance is claimed', lantern: true };   // Barney's line from the journey's life for a boss
+      if (typeof v === 'object') return v.text ? { text: String(v.text), lantern: v.lantern !== false } : null; return { text: String(v), lantern: true }; }   // with its low toll; kit 0.22.0: o.daily, the day's double (2)
     const CARD_HOLD = 1.2, CARD_UP = 0.9;
     const picking = () => { const c = h8.card; return !!(c && c.pick && !c.taken && state.time - c.t0 >= CARD_UP); };
     function pickSelect(i) { const c = h8.card; if (!picking() || !pickEl) return; c.sel = clamp(i, 0, c.pick.options.length - 1); [...pickEl.querySelectorAll('.lb-grace')].forEach((b, k) => { b.classList.toggle('is-selected', k === c.sel); b.setAttribute('aria-checked', k === c.sel ? 'true' : 'false'); }); sfx('select'); }
@@ -7201,7 +7353,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       box.append(skip);
     }
     function resetH8() {   // a new run (or the title): three lives, no armour, no spells, no potions kept, nothing showing
-      Object.assign(h8, { pips: 0, lives: 3, slots: 3, gainFx: null, spells: [], sel: 0, cost: 0, pipFx: null, lifeFx: null, flipFx: null, lines: [], line: null, name: null, boss: null, card: null, hudA: 1, fade: 0, potions: { health: 0, mana: 0 }, potCap: { health: 1, mana: 1 }, potFx: { health: null, mana: null } });
+      Object.assign(h8, { pips: 0, lives: 3, slots: 3, gainFx: null, spells: [], sel: 0, cost: 0, pipFx: null, lifeFx: null, flipFx: null, lines: [], line: null, name: null, boss: null, card: null, counter: null, hudA: 1, fade: 0, potions: { health: 0, mana: 0 }, potCap: { health: 1, mana: 1 }, potFx: { health: null, mana: null } });
       fadeEl.style.opacity = '0';
       teach.items = []; teach.dirty = true;   // kit 0.14.0
     }
@@ -7700,7 +7852,24 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       t.append(body);
       return t;
     }
-    function scoresDialog(highlight, afterGame) {
+    // kit 0.31.0 (design system version 23, HighScores): Personal bests, one row for each run in the config's bests (Run, Name, Best); the
+    // row just beaten in the brass band; "No run yet" before a run of that kind has been played
+    function bestsRows(hl) {
+      const t = el('table', 'lb-scores is-bests', '<thead><tr><th scope="col">Run</th><th scope="col">Name</th><th scope="col">Best</th></tr></thead>');
+      const body = el('tbody');
+      bestsCfg.runs.forEach((r) => {
+        const b = bestOf(r.id), tr = el('tr', b && r.id === hl ? 'is-new' : '');
+        tr.append(txt('td', '', r.name));
+        if (b) tr.append(txt('td', 'who', b.initials), txt('td', '', b.n + (b.words ? ' ' + b.words : '')));
+        else { const none = txt('td', 'none', 'No run yet'); none.colSpan = 2; tr.append(none); }
+        body.append(tr);
+      });
+      t.append(body);
+      return t;
+    }
+    let scoresTab = 0;   // kit 0.31.0: 0 the table, 1 Personal bests
+    function scoresDialog(highlight, afterGame, bestRow) {
+      if (bestsCfg) return scoresDialog23(highlight, afterGame, bestRow);
       const phone = V.phone;
       const { panel, face } = plaque('lb-hs-t', 420, 660, phone ? 'gap:10px;padding:14px 20px 16px' : 'gap:10px;padding:18px 22px 16px');
       const h = heading('lb-hs-t', 'High scores');
@@ -7755,11 +7924,82 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       }
       return { panel: panel, items: items, opts: opts };
     }
+    // kit 0.31.0 (design system version 23, HighScores): with bests in the config, two tabs under the rule (the kit's Segments in two
+    // columns): the table, named by bests.table, and Personal bests. Left and right change the table (a tap on a phone). It opens on the
+    // table from the title's tile and after a top-ten score, and on Personal bests after the initials for a new best (Barney, 14 November
+    // 2026). The plaque is tighter to fit the tabs (heading 30px), and 520 wide on a computer for Personal bests
+    function scoresDialog23(highlight, afterGame, bestRow) {
+      const phone = V.phone, tab = scoresTab;
+      const { panel, face } = plaque('lb-hs-t', tab ? 520 : 420, 660, phone ? 'gap:9px;padding:12px 20px 14px' : 'gap:6px;padding:10px 22px 10px');
+      const h = heading('lb-hs-t', 'High scores');
+      if (!phone) h.style.fontSize = '30px';
+      let buttons, items, opts, backWord = 'menu';
+      const again = () => showDialog(() => scoresDialog(highlight, afterGame, bestRow), nav ? nav.index : 0);
+      const firstEnd = afterGame && runEndInfo && runEndInfo.o.first && runEndInfo.o.shrine;
+      if (firstEnd) {
+        const spend = button('Spend your echo', true), playAgain = button('Play again'), menu = button('Menu');
+        if (phone) { spend.style.padding = '0 16px'; playAgain.style.padding = '0 16px'; menu.style.padding = '0 16px'; }
+        buttons = [spend, playAgain, menu];
+        items = [{ el: spend, activate: () => goShrine(() => { sfx('back'); state.screen = 'scores'; showDialog(() => scoresDialog(highlight, true, bestRow)); }, asObject(runEndInfo.o.shrine).bank) },
+          { el: playAgain, activate: startOver }, { el: menu, activate: toMenu }];
+        opts = { back: toMenu };
+      } else if (afterGame) {
+        const playAgain = button('Play again', true, true), menu = button('Menu');
+        if (phone) { playAgain.style.padding = '0 18px'; menu.style.padding = '0 20px'; }
+        buttons = [playAgain, menu];
+        items = [{ el: playAgain, activate: startOver }, { el: menu, activate: toMenu }];
+        opts = { back: toMenu };
+      } else {
+        const back = button('Back', true, true);
+        const close = () => { sfx('back'); state.screen = 'title'; closeDialog();
+          if (scoresFromTile) { scoresFromTile = false; const t = titleScreen.querySelector('.lb-arch-tile[data-act="scores"]'); if (t) t.focus(); } };
+        if (phone) back.style.padding = '0 22px';
+        buttons = [back];
+        items = [{ el: back, activate: close }];
+        opts = { back: close };
+        backWord = 'back';
+      }
+      const seg = el('div', 'lb-segments is-two');
+      seg.setAttribute('role', 'tablist');
+      seg.setAttribute('aria-label', 'Tables');
+      const toTab = (n) => { if (n === scoresTab) return; scoresTab = n; sfx('select'); again(); };
+      [bestsCfg.table, 'Personal bests'].forEach((name, n) => {
+        const b = txt('button', '', name);
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-selected', n === tab ? 'true' : 'false');
+        b.setAttribute('aria-pressed', n === tab ? 'true' : 'false');
+        b.addEventListener('click', () => { b.blur(); toTab(n); });
+        seg.append(b);
+      });
+      opts.keys = { ArrowLeft: () => toTab(0), KeyA: () => toTab(0), ArrowRight: () => toTab(1), KeyD: () => toTab(1) };
+      let body;
+      if (tab) body = bestsRows(bestRow);
+      else {
+        const table = readScores();
+        if (!table.length) { body = txt('p', 'lb-note', 'No scores yet.'); body.style.textAlign = 'center'; }
+        else if (phone) { body = el('div', 'lb-scores-cols'); body.append(scoreRows(table, highlight, 0, 5), scoreRows(table, highlight, 5, 10)); }
+        else body = scoreRows(table, highlight, 0, 10);
+      }
+      if (phone) {
+        const head = el('div', 'lb-header');
+        head.append(h, ...buttons);
+        face.append(head, seg, body);
+      } else {
+        const row = el('div', 'lb-btns');
+        row.style.paddingTop = '2px';
+        row.append(...buttons);
+        face.append(h, el('div', '', RULE).firstChild, seg, body, row);
+        if (!touch) { const hint = el('p', 'lb-hint', kbd('left') + ' ' + kbd('right') + ' table · ' + kbd('Backspace') + ' ' + backWord); hint.style.textAlign = 'center'; face.append(hint); }
+      }
+      return { panel: panel, items: items, opts: opts };
+    }
     let scoresFromTile = false;   // kit 0.16.0: High scores opened from its arch tile, so Back focuses the tile again
-    function openScores(highlight, afterGame) {
+    function openScores(highlight, afterGame, bestRow) {   // kit 0.31.0: bestRow, a run's id, opens on Personal bests with that row in the band
       if (afterGame) scoresFromTile = false;
+      scoresTab = bestRow && bestsCfg ? 1 : 0;
       state.screen = 'scores';
-      showDialog(() => scoresDialog(highlight, afterGame));
+      showDialog(() => scoresDialog(highlight, afterGame, bestRow));
     }
 
     function gameOverDialog(score, newBest, qualifies) {
@@ -7806,7 +8046,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       '<g transform="translate(18.1 9.6) scale(0.62)" class="pf m"><path d="M9.8 2.4 H14.2 V4.4 H13.4 V7 Q15.6 8.3 15.6 10.6 V19.4 Q15.6 21.6 13.4 21.6 H10.6 Q8.4 21.6 8.4 19.4 V10.6 Q8.4 8.3 10.6 7 V4.4 H9.8 Z"/></g>',
       '<b>Tap a potion</b>, top left, to drink it'];
     const HOWTO_TOUCH = [
-      ['<polygon class="oct dim" points="10.0,0.7 24.0,0.7 33.3,10.0 33.3,24.0 24.0,33.3 10.0,33.3 0.7,24.0 0.7,10.0"/><path class="chev" d="M7 13.5 L4 17 L7 20.5 M27 13.5 L30 17 L27 20.5 M13.5 7 L17 4 L20.5 7"/><path class="mk" d="M1 33 L2.5 28 L6 31.5 Z M33 33 L28 31.5 L31.5 28 Z"/><path class="dia" d="M17 12.5 L21.5 17 L17 21.5 L12.5 17 Z"/>', '<b>Left thumb</b>, anywhere on the left: walk, climb up a bank; pull down to the side, flick or double tap to roll'],   // kit 0.26.0 (version 21): the arrowheads, Barney's words
+      ['<polygon class="oct dim" points="10.0,0.7 24.0,0.7 33.3,10.0 33.3,24.0 24.0,33.3 10.0,33.3 0.7,24.0 0.7,10.0"/><path class="chev" d="M7 13.5 L4 17 L7 20.5 M27 13.5 L30 17 L27 20.5 M13.5 7 L17 4 L20.5 7"/><path class="mk" d="M1 33 L2.5 28 L6 31.5 Z M33 33 L28 31.5 L31.5 28 Z"/><path class="dia" d="M17 12.5 L21.5 17 L17 21.5 L12.5 17 Z"/>', '<b>Left thumb</b>, anywhere on the left: walk, climb up a bank; pull down to the side or flick to roll'],   // kit 0.33.0: no double tap; kit 0.26.0 (version 21): the arrowheads, Barney's words
       [OCT34 + '<g class="ic" transform="translate(5,5)"><path d="M12 16.5 V4.5 M7 9.5 L12 4.5 L17 9.5 M6 20.5 H18"/></g>', '<b>Jump</b>'],
       [OCT34 + '<g class="ic" transform="translate(5,5)"><path d="M19.2 4.8 L9.4 14.6 M6.8 12 L12 17.2 M9.4 14.6 L5.4 18.6"/><circle class="solid" cx="4.6" cy="19.4" r="1.5"/></g>', '<b>Attack</b>'],
       [OCT34 + '<g class="ic" transform="translate(5,5)"><circle class="solid" cx="16" cy="12" r="4.8"/><path class="solid" d="M13.8 8.2 L3.6 4.4 L11.2 10.6 Z M12.4 10.8 L0.8 12.4 L12.4 13.8 Z M13.8 15.8 L4.2 18.8 L11.2 13.6 Z"/></g>', '<b>Cast</b> the chosen spell'],
@@ -8039,6 +8279,12 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
          run's stolen echo) } or null when everything is bought; first: the very first run (its line and "Spend your echo");
          scored: false keeps the run off the high scores; shrine: { bank } for the Echo Shrine's button (kit 0.10.0's stand-in
          plaque until the shrine is built, step 5e).
+         Kit 0.31.0 (design system version 23, RunEnd, NewRun): count: { n, unit } the score in the run's echo's place (43 felled);
+         near: { wave, left 0..1, count } "Fell in Wave 5", its bar the share of the wave still to fall and count how many; stolen: the
+         echo the run stole, on its own line ("22 echo stolen"); best: { id, n, words } this run for Personal bests (bests in the config):
+         "New best" when it beats the one kept, the first above 0 included (with no initials stored, Continue asks for them and High
+         scores then opens on Personal bests), and "Your best: 61 felled · wave 7" when it falls short and its run says yours;
+         news: { heading, line, note } the news plaque, shown first.
        From 0.8 to 2.0 s this run's echo steps into the bar and "to go" counts down; READY lights once with the soft chime if the
        unlock is reached; the buttons take input at 1.0 s, so a jump or a swing mashed as he falls can't skip it. */
     const UNLOCK_PIC = {   // version 12's pictures for the spells bought at the Echo Shrine (EchoShrine, RunEnd), as drawn
@@ -8070,9 +8316,40 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       after(delay == null ? 0.8 : Math.max(0, +delay || 0), () => {
         let o;
         try { o = asObject(typeof info === 'function' ? info() : info); } catch (e) { reportError(e); o = {}; }
-        showRunEnd(o);
-        if (typeof info === 'function') runEndInfo.src = info;   // kit 0.11.0: asked again when the Echo Shrine closes, for what is left
+        const go = () => {
+          showRunEnd(o);
+          if (typeof info === 'function') runEndInfo.src = info;   // kit 0.11.0: asked again when the Echo Shrine closes, for what is left
+        };
+        if (o.news) showNews(o.news, go); else go();   // kit 0.31.0: the news plaque first (NewRun)
       });
+    }
+    /* kit 0.31.0 (design system version 23, NewRun): the plaque that says a new run has opened, once, before a run's end or a win:
+       lb.runEnd({ ..., news }) or lb.win({ ..., news }), news { heading, line, note, flag }: the flag ("A new run is open" unless given),
+       the run's name as the heading, Barney's line for the run, and the note ("Choose it after Start game."). One press, Continue, goes
+       on to the run's end or the win. It has no sound of its own, only the press's (Barney, 14 November 2026: reading 12); Enter
+       continues and nothing goes back. The scene holds still under the scrim, as for the run's end. Which run and when is the game's. */
+    function showNews(news, go) {
+      const N = asObject(news);
+      if (!N.heading || !state.inGame) { go(); return; }
+      cgContext(null);
+      state.screen = 'over';
+      state.over = true;
+      state.ending = false;
+      const shown = performance.now();
+      showDialog(() => newsDialog(N, go, shown));
+    }
+    function newsDialog(N, go, shown) {
+      const phone = V.phone;
+      const { panel, face } = plaque('lb-nr-t', 500, 560, phone ? 'gap:8px;padding:16px 24px 14px' : 'gap:10px;padding:22px 26px 18px', 'is-centred');
+      const on = button('Continue', true, true);
+      on.style.width = '100%';
+      face.append(txt('p', 'lb-flag', N.flag ? String(N.flag) : 'A new run is open'), heading('lb-nr-t', String(N.heading)), el('div', '', RULE).firstChild);
+      if (N.line) { const l = txt('p', 'lb-win-line', String(N.line)); l.style.margin = '0'; face.append(l); }
+      if (N.note) face.append(txt('p', 'lb-best-line', String(N.note)));
+      face.append(on);
+      if (!touch && !phone) { const h = el('p', 'lb-hint', kbd('Enter') + ' continue'); h.style.textAlign = 'center'; face.append(h); }
+      let gone = false;
+      return { panel: panel, items: [{ el: on, activate: () => { if (gone) return; gone = true; sfx('confirm'); go(); } }], opts: { until: shown + 200 } };   // as the run's end: input from 0.2 s
     }
     function showRunEnd(o) {
       cgContext(null);                 // kit 0.27.0
@@ -8083,27 +8360,49 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       const prevBest = table.length ? table[0].s : 0;
       const newBest = scored && score > 0 && score > prevBest;
       const qualifies = scored && score > 0 && (table.length < 10 || score > table[table.length - 1].s);
-      if (newBest) setTimeout(() => sfx('newBest'), 650);
+      // kit 0.31.0 (design system version 23, RunEnd and HighScores): o.best { id, n, words } offers this run to Personal bests; a new best is
+      // kept at once (with "---" while no initials are stored, and the initials asked for after Continue) and flagged as the table's is
+      const bo = bestsCfg && o.best ? asObject(o.best) : null, bestId = bo && bo.id != null ? String(bo.id) : null;
+      const bestPrev = bestId ? bestOf(bestId) : null, bestNew = bestId ? offerBest(bestId, bo.n, bo.words) : false;
+      if (newBest || bestNew) setTimeout(() => sfx('newBest'), 650);
       sfx('gameOver');   // kit 0.16.0 (version 13): one low, muted toll as the plaque appears
-      runEndInfo = { o: o, newBest: newBest, qualifies: qualifies, t0: performance.now(), chimed: false, timer: 0 };
+      runEndInfo = { o: o, newBest: newBest, qualifies: qualifies, t0: performance.now(), chimed: false, timer: 0,
+        bestId: bestId, bestPrev: bestPrev, bestNew: bestNew, bestAsk: bestNew && !storedInitials() };
       showDialog(runEndDialog);
     }
     function runEndDialog() {
       const R = runEndInfo, o = R.o, phone = V.phone;
       const shrine = o.shrine ? asObject(o.shrine) : null, first = !!o.first && !!shrine;
-      const faceCss = phone ? 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;align-items:center;padding:18px 20px'
-        : R.qualifies ? 'gap:10px;padding:20px 20px 16px' : o.daily ? 'gap:6px;padding:14px 20px 12px' : 'gap:8px;padding:18px 20px 14px';
+      // kit 0.31.0 (version 23, RunEnd): o.count { n, unit } is the score shown in the run's echo's place (The Endless Rot: the monsters felled);
+      // o.near.wave the wave he fell in ("Fell in Wave 5", its bar the share of its monsters still to fall, near.count how many); o.stolen the
+      // echo the run stole, on its own line ("22 echo stolen"); and, for a run in Personal bests whose config says yours, "Your best: ..."
+      // when it fell short. With any of them the plaque is drawn tighter, as version 23 draws it
+      const cnt = o.count ? asObject(o.count) : null, shownN = cnt ? Math.max(0, Math.round(+cnt.n || 0)) : state.score, unit = cnt && cnt.unit ? String(cnt.unit) : 'echo';
+      const near = asObject(o.near), runCfg = R.bestId && bestsCfg ? bestsCfg.runs.find((r) => r.id === R.bestId) : null;
+      const yours = runCfg && runCfg.yours && !R.bestNew && R.bestPrev ? R.bestPrev : null, stolen = o.stolen != null ? Math.max(0, Math.round(+o.stolen || 0)) : null;
+      const v23 = !!(cnt || near.wave || R.bestNew || yours || stolen != null);
+      const faceCss = phone ? 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;align-items:center;padding:' + (v23 ? '16px 20px' : '18px 20px')
+        : R.qualifies ? 'gap:10px;padding:20px 20px 16px' : o.daily ? 'gap:6px;padding:14px 20px 12px' : v23 ? 'gap:7px;padding:16px 20px 12px' : 'gap:8px;padding:18px 20px 14px';
       const { panel, face } = plaque('lb-re-t', 470, 660, faceCss);
       const parts = [heading('lb-re-t', 'Game over')];
       if (o.line !== '') parts.push(txt('p', 'lb-win-line', o.line || RUN_LINE));
       parts.push(el('div', '', RULE).firstChild);
       const result = el('div', 'lb-result');
-      if (R.newBest) result.append(txt('p', 'lb-flag', 'New best'));
-      result.append(txt('p', 'lb-num lb-score-xl', String(state.score)), txt('p', 'lb-unit', 'echo'));
+      if (R.newBest || R.bestNew) result.append(txt('p', 'lb-flag', 'New best'));
+      result.append(txt('p', 'lb-num lb-score-xl', String(shownN)), txt('p', 'lb-unit', unit));
       parts.push(result);
-      // the near-miss line: the boss he fell to and how much of it was left, or the furthest place yet, or nothing
-      const near = asObject(o.near);
-      if (near.boss) {
+      // the near-miss line: the boss he fell to and how much of it was left, or the wave he fell in, or the furthest place yet, or nothing
+      if (near.wave && !near.boss) {   // kit 0.31.0: "Fell in Wave 5 {bar} 3 left", always true, so always shown (version 23)
+        const pc = Math.round(clamp(Math.ceil(clamp(+near.left || 0, 0, 1) * 100), 0, 100));
+        const p = el('p', 'lb-near' + (phone ? ' is-two' : ''));
+        p.append(document.createTextNode('Fell in '), txt('span', 'lb-near-name', String(near.wave)));
+        if (phone) { const br = el('span', 'br'); br.setAttribute('aria-hidden', 'true'); p.append(br); }
+        const bar = el('span', 'lb-near-bar', '<i></i>');
+        bar.setAttribute('aria-hidden', 'true');
+        bar.firstChild.style.width = pc + '%';
+        p.append(bar, el('span', '', '<span class="lb-num">' + Math.max(0, near.count | 0) + '</span> left'));
+        parts.push(p);
+      } else if (near.boss) {
         const pc = Math.round(clamp(Math.ceil((+near.left || 0) * 100), 1, 100));   // up, so a boss still standing never reads 0%
         const p = el('p', 'lb-near' + (phone ? ' is-two' : ''));   // kit 0.16.0: on a phone always two lines, a break after the name
         p.append(document.createTextNode('Fell to '), txt('span', 'lb-near-name', String(near.boss)));
@@ -8122,6 +8421,9 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       // the next unlock: its picture, its name and what is still to go; the bar from 0 to its price, banked echo darker, this run's bright
       let paint = null, shrineBtn = null;
       const right = [];
+      // kit 0.31.0 (version 23, RunEnd): "Your best: 61 felled · wave 7" with the near miss; "22 echo stolen" above the next unlock
+      if (yours) { const yl = el('p', 'lb-best-line', 'Your best: <span class="lb-num">' + yours.n + '</span>'); if (yours.words) yl.append(document.createTextNode(' ' + yours.words)); parts.push(yl); }
+      if (stolen != null) right.push(el('p', 'lb-best-line', '<span class="lb-num">' + stolen + '</span> echo stolen'));
       if (o.next) {
         const n = asObject(o.next), price = Math.max(1, Math.round(+n.price || 1)), was = clamp(Math.round(+n.was || 0), 0, price), gain = clamp(Math.round(+n.now || 0), 0, price - was);
         const box = el('div', 'lb-next', unlockPic(n.kind));
@@ -8166,9 +8468,9 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
         if (R.src) { try { R.o = asObject(R.src()); } catch (e) { reportError(e); } R.t0 = performance.now() - 5000; R.chimed = true; }
         showDialog(runEndDialog, items.findIndex((it) => it.shrine));
       };
-      if (R.qualifies) {
+      if (R.qualifies || R.bestAsk) {   // kit 0.31.0: a new personal best with no initials stored asks for them too (RunEnd, version 23)
         primary = button('Continue', true);
-        items.push({ el: primary, activate: () => { sfx('confirm'); openInitials(); } });
+        items.push({ el: primary, activate: () => { sfx('confirm'); openInitials(R.bestAsk ? { best: R.bestId, table: R.qualifies, n: shownN, unit: unit } : null); } });
         hint = kbd('Enter') + ' continue to your initials';
         opts = {};
       } else if (first) {
@@ -8196,7 +8498,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       const back = opts.back;
       if (back) opts.back = () => { if (performance.now() >= opts.until) back(); };
       if (phone) {
-        const a = el('div'); a.style.cssText = 'display:flex;flex-direction:column;gap:8px'; a.append(...parts);
+        const a = el('div'); a.style.cssText = 'display:flex;flex-direction:column;gap:' + (v23 ? 7 : 8) + 'px'; a.append(...parts);   // kit 0.31.0: version 23's 7px
         const b = el('div'); b.style.cssText = 'display:flex;flex-direction:column;gap:10px'; b.append(...right);
         face.append(a, b);
       } else {
@@ -8357,9 +8659,10 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       const done = button('Done', true);
       done.style.padding = '0 28px';
       done.addEventListener('click', saveInitials);
+      const forBest = !!(initials.best && !initials.table), fig = forBest ? initials.n : state.score, figUnit = forBest ? initials.unit : 'echo';   // kit 0.31.0: a personal best's own figure
       if (phone) {
         slots.style.cssText = 'gap:10px;padding:0';
-        const line = el('p', 'lb-hint', '<span class="lb-num" style="font-size:18px">' + state.score + '</span> echo. Tap a letter, then the arrows to change it.');
+        const line = el('p', 'lb-hint', '<span class="lb-num" style="font-size:18px">' + fig + '</span> ' + figUnit + '. Tap a letter, then the arrows to change it.');
         line.style.cssText = 'font-size:16px;line-height:1.35;color:var(--text-2)';
         done.style.marginTop = '6px';
         const left = el('div');
@@ -8367,7 +8670,7 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
         left.append(h, line, done);
         face.append(left, slots);
       } else {
-        const line = el('p', 'lb-hint', '<span class="lb-num" style="font-size:20px">' + state.score + '</span> echo. Enter your initials.');
+        const line = el('p', 'lb-hint', '<span class="lb-num" style="font-size:20px">' + fig + '</span> ' + figUnit + '. Enter your initials.');
         line.style.cssText = 'font-size:17px;color:var(--text-2)';
         face.append(h, el('div', '', RULE).firstChild, line, slots);
         if (!touch) face.append(el('p', 'lb-hint', kbd('up') + ' ' + kbd('down') + ' letter · ' + kbd('left') + ' ' + kbd('right') + ' move · ' + kbd('Enter') + ' done'));
@@ -8377,10 +8680,13 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       setTimeout(() => { if (done.isConnected) done.focus({ preventScroll: true }); }, 0);
       return { panel: panel };
     }
-    function openInitials() {
+    // kit 0.31.0: o { best, table, n, unit }: the initials for a new personal best (best: its run's id), and for a top-ten score too when
+    // table is true; with no o, for the table alone, as before
+    function openInitials(o) {
       state.screen = 'initials';
       const last = String(store.get('retrokit.initials', 'AAA')).toUpperCase();
-      initials = { letters: [0, 1, 2].map((i) => (CHARS.indexOf(last[i]) >= 0 && last[i] ? last[i] : 'A')), sel: 0, slots: null };
+      initials = { letters: [0, 1, 2].map((i) => (CHARS.indexOf(last[i]) >= 0 && last[i] ? last[i] : 'A')), sel: 0, slots: null,
+        best: o && o.best ? String(o.best) : null, table: o ? !!o.table : true, n: o ? Math.max(0, o.n | 0) : 0, unit: o && o.unit ? String(o.unit) : 'echo' };
       showDialog(initialsDialog);
     }
     function initialsKey(e) {
@@ -8400,9 +8706,14 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
     }
     function saveInitials() {
       if (!initials) return;
-      const name = initials.letters.join('');
+      const name = initials.letters.join(''), I = initials;
       initials = null;
       store.set('retrokit.initials', name);
+      if (I.best) {   // kit 0.31.0: the new personal best, kept with "---" until now, takes the initials; then Personal bests, its row in the band
+        const all = readBests();
+        if (all[I.best] && all[I.best].i === '---') { all[I.best].i = name; store.set(bestKey(), all); }
+        if (!I.table) { sfx('confirm'); openScores(-1, true, I.best); return; }
+      }
       const table = readScores();
       const entry = { i: name, s: state.score, d: new Date().toISOString().slice(0, 10) };
       table.push(entry);
@@ -8490,7 +8801,9 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
        a plaque over it closes, so the first item follows the run. Continue opens the relight plaque (Relight): Return to the lantern
        (primary, focused, so Enter returns) calls back(lb, start), where the game readies its run and calls start(id) as chooseRun does;
        Abandon the run calls abandon(lb), with no second step, and the title reads Start game again, selected; Backspace closes the plaque
-       and the run still waits. The note is left out when the run holds no echo. */
+       and the run still waits. The note is left out when the run holds no echo. Kit 0.31.0 (design system version 23, Relight): waiting
+       may also give score, the words in the run's echo's place ("54 felled"), and button, the primary button's words ("Return to the
+       wave"); where and again already serve The Endless Rot ("Dawn · Wave 7", "Again, harder" after it). */
     const resumeCfg = cfg.resume && typeof cfg.resume.waiting === 'function' ? cfg.resume : null;
     let titleFor = null;   // the place line the title was last built with, or null for Start game
     function resumeInfo() {
@@ -8498,7 +8811,8 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       let w = null;
       try { w = resumeCfg.waiting(api); } catch (e) { reportError(e); }
       return w && typeof w === 'object' && w.where
-        ? { where: String(w.where), run: w.run ? String(w.run) : '', lives: Math.max(0, w.lives | 0), echo: Math.max(0, w.echo | 0), again: !!w.again } : null;
+        ? { where: String(w.where), run: w.run ? String(w.run) : '', lives: Math.max(0, w.lives | 0), echo: Math.max(0, w.echo | 0), again: !!w.again,
+          score: w.score ? String(w.score) : '', button: w.button ? String(w.button) : '' } : null;   // kit 0.31.0 (version 23, Relight): "54 felled", "Return to the wave"
     }
     function syncTitle() {
       if (state.inGame || !resumeCfg) return;
@@ -8511,8 +8825,8 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       const facts = el('div', 'lb-relight-facts');
       if (w.run) facts.append(txt('span', 'lb-relight-run', w.run));
       facts.append(txt('span', '', w.where + (w.again ? ' \u00b7 Again, harder' : '')),
-        txt('span', '', (w.lives === 1 ? '1 life left' : w.lives + ' lives left') + ' \u00b7 ' + w.echo + ' echo'));
-      const back = button('Return to the lantern', true, true);
+        txt('span', '', (w.lives === 1 ? '1 life left' : w.lives + ' lives left') + ' \u00b7 ' + (w.score || w.echo + ' echo')));
+      const back = button(w.button || 'Return to the lantern', true, true);
       back.style.width = '100%';
       const drop = button('Abandon the run');
       drop.style.width = '100%';
@@ -8794,7 +9108,8 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
          input.keyPressed(code), and two fingers: input.pointer and input.pointer2 (x, y in lines; down, pressed, released, dx, dy).
          Version 8's named controls: input.jump (Space), attack (J), cast (K), switch (L), roll (Shift), climb (W or up), held and
          in input.pressed. With the full HUD on a touch device the touch controls press them: the stick (left, right, up and climb;
-         a quick flick sideways presses roll, and kit 0.8.2 a double tap of the left thumb), the jump, attack and cast buttons, and a tap on
+         a quick flick sideways presses roll, and kit 0.26.0 the pull down to the side; kit 0.8.2 to 0.32.0 a double tap of the left thumb
+         too), the jump, attack and cast buttons, and a tap on
          the spell's socket (switch). Kit 0.9.0: input.drinkHealth (Q) and drinkMana (E), pressed too by a tap or click on a potion's socket.
        lb.addWisps(n), lb.wisps, lb.best: the score, in whole wisps. lb.gameOver(delay): ends the run (game over, then the
          initials if it makes the top ten). lb.hud.health(0..1), lb.hud.mana(0..1): the bars; mana: false in the config leaves
@@ -8810,7 +9125,12 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
          picture dims while mana is short; a new choice turns it over; a tap on the socket presses input.pressed.switch),
          lb.hud.line(kind, text) (a plaque line, 2 s; lines take turns; kind a loot picture or none), lb.hud.bossName(name) (2.6 s),
          lb.hud.boss({ name, hp 0..1 }) (the boss bar: it fills as the boss arrives, a hit leaves a trace that drains) and
-         lb.hud.boss(null) (it goes), lb.hud.fade(0..1) (the HUD's own fade). Kit 0.9.0 (design system version 11; potions: true in the
+         lb.hud.boss(null) (it goes), lb.hud.fade(0..1) (the HUD's own fade). Kit 0.30.0 (design system version 23, The Endless Rot):
+         lb.hud.counter(label, n) shows n under its own label in the echo counter's place ("Felled"; "41 felled" to a screen reader) and
+         lb.hud.counter(null) gives it back to echo (each run starts with echo; the echo is still kept, out of sight); lb.hud.boss({ name,
+         hp, full: true }) shows the bar already at its share, as a wave's bar appears, where a boss's fills as it arrives; and
+         lb.placeCard(place, onBlack, onDone, { life }) puts one gold line under the place's words: true for the life's lantern and
+         "Another chance is claimed", other words with the lantern, or { text, lantern: false } ("10 echo"). Kit 0.9.0 (design system version 11; potions: true in the
          config): two potion sockets under the plaque, health and mana. lb.hud.potions(health, mana) sets which are kept (a kept one dims
          while its bar is full); lb.hud.keep(kind, { line }) keeps one (its socket fills as world.loot's keep flight lands; line: the first
          time, the plaque line saying how to drink it); lb.hud.drink(kind) drinks one (its socket drains, its key lights, its sound plays;
@@ -8832,7 +9152,12 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
          y left out stands them on the ground (world.ground(x)). A level (version 8): L = world.level(place, order) gives the place's
          whole level (L.length, L.arena, L.sections, L.checkpoints, L.pits, L.banks, L.ground(x), L.rise(x), L.pit(x), L.pieces());
          world.begin(ctx, { level: L, camX }) draws it in place of the flat strip, rising with its ground, and y left out stands
-         things on its ground. The wanderer (version 8): world.wanderer(x, { y, move, step, facing, sword: { reach, bite }, safe,
+         things on its ground. Kit 0.29.0 (design system version 23, Ground): A = world.arena(place, points) gives The Endless Rot's
+         arena for a place (world.arenas: the four in the story's order), the design's slope-only shape unless the game passes its own
+         points ([x, share of the place's maximum height, 's' or 'f'], from x 0, left to right, no banks); it has a level's fields with
+         no pits, banks, pieces or checkpoints (A.kind 'arena', A.length and A.arena 1,800, A.shape, A.points, A.ground(x), A.rise(x)),
+         and world.begin(ctx, { level: A, camX }) draws it with its scenery; beyond each end the ground carries on flat at the end's
+         height. The wanderer (version 8): world.wanderer(x, { y, move, step, facing, sword: { reach, bite }, safe,
          hurt: { kind, t }, shatter, pit, heal: { t, level }, fizzle, form, drink: { kind, t } }) draws him in one of world.moves at a puppet step (12 a
          second; walking or standing in time if move is left out) and returns his chest, hand and lantern; world.move(name, step)
          gives a move's length, tag and where the review loops have him stand. The spells, loot and checkpoints (version 8):
@@ -8841,7 +9166,12 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
          seconds since the moment began. Then:
          world.monster({ kind, x, y, ph, id, defeat, seed, attack, hit }) (kinds in world.MONSTERS; give each monster its own id;
          defeat 0 to 1 breaks it into card pieces and a wisp, over 1.6 s; version 8: the posable monsters, attack { name, t } with
-         names in world.ATTACKS, moving it from x and returning dx, dy and its phase; hit, seconds since a blow: 0.13 s of flare),
+         names in world.ATTACKS, moving it from x and returning dx, dy and its phase; hit, seconds since a blow: 0.13 s of flare;
+         rise, seconds since it began rising out of the ground, 0.35 s from 26 below; kit 0.32.0: with riseLen, seconds, and
+         riseDepth, lines (its own height if left out: 104 for a ghoul, 37 for a crawler), the deeper rise The Endless Rot's
+         monsters make through a warning, version 23's 0.6 s),
+         world.warning(x, { a, w, crack }) (kit 0.32.0: an ember warning on the ground at x, cracked as the skull's call, a 0 to 1,
+         w its width, 70; drawn where it is called, under what comes after),
          world.boss({ x, y, defeat, arrive, attack, facing, hit }) (the place's own; defeat over 2.2 s; version 8: its arrival and
          three attacks, names in world.BOSS_ATTACKS, lengths in world.BOSS_MOVES; its warnings and reach are drawn in world.end()), world.splash(x, { y, seed }), world.candle(x, y),
          world.wallLamp(x, y), world.post(x, y, lit), world.streetLamp(x, y), world.shrine(x, y), world.potion(x, y),
@@ -8925,7 +9255,12 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       ui: ui, get run() { return state.run || null; },   // kit 0.11.0
       titleLine: showTitleLine,   // kit 0.21.0
       teach: { show: teachShow, hide: teachHide, get showing() { return teach.items.map((it) => it.id); } },   // kit 0.14.0
-      fade: fade, placeCard: placeCard, placing: placing, win: (o) => showWin(o), held: setHeld, howTo: () => openHowTo('play'),   // version 8 (4c-6a)
+      fade: fade, placeCard: placeCard, placing: placing, held: setHeld, howTo: () => openHowTo('play'),   // version 8 (4c-6a)
+      win: (o) => { const w = asObject(o); if (w.news) showNews(w.news, () => showWin(o)); else showWin(o); },   // kit 0.31.0: the news plaque first (NewRun)
+      // kit 0.31.0 (design system version 23, HighScores): Personal bests, with bests in the config. get(id) gives { n, words, initials, date }
+      // or null; offer(id, n, words) keeps n as that run's best if it beats the one kept (true if it did), with the stored initials or "---",
+      // as a saved run that ended because the page was closed again still counts (Barney, 14 November 2026). A run's end keeps its own (o.best)
+      bests: { get: (id) => bestOf(String(id)), offer: (id, n, words) => offerBest(id, n, words), get runs() { return bestsCfg ? bestsCfg.runs.map((r) => r.id) : []; } },
       get test() { return testCfg ? Object.assign({}, testValues) : null; },   // kit 0.8.1: Testing's values, or null when the game has none
       sounds: Object.keys(SND8.FX), ambient: ambient,   // version 8 (4c-7)
       music: (i) => { if (music && music.tracks[i]) music.want = i; },
@@ -8976,6 +9311,8 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
       pickTake: (i) => pickTake(i), get card() { return h8.card; },   // kit 0.13.0
       openRelight: openRelight, get titleLine() { return titleLine; },   // kit 0.21.0
       setScores: (table) => { if (Array.isArray(table)) store.set(scoreKey(), table); else store.remove(scoreKey()); },   // kit 0.10.0: the test page's sample tables
+      setBests: (o) => { if (o && typeof o === 'object') store.set(bestKey(), o); else store.remove(bestKey()); },   // kit 0.31.0: sample Personal bests ({ id: { n, w, i } })
+      setInitials: (v) => { if (v) store.set('retrokit.initials', String(v)); else store.remove('retrokit.initials'); },   // kit 0.31.0: stored initials, or none
       get runEnd() { return runEndInfo; }
     };
     return api;
@@ -9062,7 +9399,11 @@ return{build,set,setPotion,stickShow,ICON,POT,OPTS,oct,ensureDefs,ROLL_ZONE,inRo
    full is picked up as 2 echo (take). Design system 18 (HANDOVER-design-18.md, kit 0.22.0): the day's double announced on Night's card
    and in the choice of run (part C); The Moor Mother closes in (part D, kit 0.23.0); a life for each boss, up to five (part G, kit 0.24.0).
    The climb (HANDOVER-climb-and-sdk.md, part A, kit 0.25.0): each place from Blood Red Rain on lighter before its halfway lantern, busier after it.
-   The CrazyGames SDK (part B, kit 0.27.0): the CrazyGames build's feedback context (portalNote). */
+   The CrazyGames SDK (part B, kit 0.27.0): the CrazyGames build's feedback context (portalNote).
+   Barney's play of The Endless Rot (14 November 2026, CM211; no kit change): a walker higher than him on a slope sweeps low, everywhere.
+   Then (CM212, with kit 0.33.0's touch fixes): a roll out of a sword swing turns him first to the way he is pressing.
+   Then (CM214): the walker sweeps low from 4 higher than him, where it was 20; in The Endless Rot its blow 35% (tuning 5).
+   Then (CM215): in the playtest's copy The Endless Rot is open from the start. */
 
 const PLACES = ['night', 'storm', 'dawn', 'mist'];
 const TRACK = { night: 0, storm: 0, dawn: 1, mist: 1 };   // The Long Vigil, then Lantern in the Moor from Dawn's place card
@@ -9091,7 +9432,7 @@ const LIFE_ECHO = 10;
 // the second loop (step 5e-5; the gameplay note's How it gets harder): monsters take 1.5 times the hits and come 1.2 times faster, bosses have
 // 1.5 times the health, echo is doubled (all starting figures but the doubling)
 const HARD = { hits: 1.5, speed: 1.2, boss: 1.5, echo: 2 };
-const hard = (g, k) => (g.loop === 2 ? HARD[k] : 1);           // echo for each life still lit at the win (the win's words below)
+const hard = (g, k) => (g.run === 'rot' ? rotRamp(g, k) : g.loop === 2 ? HARD[k] : 1);   // The Endless Rot: its own ramp, wave by wave (rotRamp)           // echo for each life still lit at the win (the win's words below)
 const RETURN_AT = 46;            // he forms again this far past the checkpoint that brought him back
 
 // Fighting (4d-2a; starting figures)
@@ -9130,6 +9471,8 @@ const MON = {
   walker:  { dmg: 0.25, hp: 5, wisps: 5, box: [-28, 31, -193, 0], ground: true, speed: 32, range: 100, keep: 150, cd: 1.2, atk: 'sweep',
     up: true, through: true, zone: { high: [0.74, 0.92, -106, -25, -200, -112], low: [0.74, 0.92, -104, -45, -42, -12] } },   // the arms reach out from 0.74 s
 };
+const WALKER_ABOVE = 4;    // a walker whose feet are this much higher than the ground under him sweeps low (CM211's 20; CM214, Barney:
+                           // "still seems to be doing some high attacks when I am slightly lower on the slope")
 const ATK_T = { lunge: 0.88, dive: 1.4, bite: 1.0, swipe: 1.35, high: 1.3, low: 1.25, spit: 1.1 };   // each attack's length, signal to recovered (the kit's)
 // Step 5e-8 (design system 15, HANDOVER-design-15.md sections 2 to 6; starting figures): the mouth-hat's spit. It spits when he is 160 to
 // 330 from it (beyond the longest sword, 147), the gob's path is clear of hills and pieces and all of it is on screen, at him on its ground,
@@ -9238,7 +9581,7 @@ function feast(g, lb, boss) {        // step 5e-6b: a defeat feeds Marrow Feast 
 }
 const swordBite = (g) => 1 + 0.5 * (g.sword.bite + (g.graces.keen ? GRACE.keen : 0));
 const swordReach = (g) => SWORD_REACH + REACH_UP * (g.sword.reach + (g.graces.reach ? GRACE.reach : 0));
-const spellCost = (g, sp) => (sp === 'heal' ? SPELL.heal.cost : SPELL[sp].cost * (g.graces.surge ? GRACE.surge : 1));
+const spellCost = (g, sp) => (sp === 'heal' ? (g.run === 'rot' ? ROT_RAMP.healCost : SPELL.heal.cost) : SPELL[sp].cost * (g.graces.surge ? GRACE.surge : 1));   // The Endless Rot's heal: its own cost (tuning 4)
 const rollAt = (g) => g.mt * (g.graces && g.graces.fleet ? GRACE.fleet : 1);
 
 // the bolt and the acid (step 5e-2; all starting figures, to judge in play): a body-length is his height
@@ -9263,7 +9606,7 @@ const LOOT_SIZE = 1.4;           // loot drawn 1.4 times its old size, and reach
 // a defeat's drop (the gameplay note): a health or a mana potion 1 in 6 each, armour 1 in 20; a walker first has 1 in 4 to drop a
 // spell scroll or a sword upgrade (one he can still use)
 const SPARE_ARMOUR = 2;          // echo for armour found with three pips full (the playtest pass, part A)
-const DROP = { health: 1 / 9, mana: 1 / 12, shield: 1 / 20, upgrade: 1 / 4 };   // potions halved from 1 in 6, then health back up to 1 in 9 (Barney, 5 November 2026)
+const DROP = { health: 1 / 9, mana: 1 / 12, shield: 1 / 20, upgrade: 1 / 4, rotUpgrade: 1 / 30 };   // rotUpgrade: The Endless Rot's own rule (Barney, 14 November 2026), an ordinary monster's sword or spell upgrade   // potions halved from 1 in 6, then health back up to 1 in 9 (Barney, 5 November 2026)
 const PIECE_POTION = 0.35;       // the scenery potions made real: about one piece in three holds a health potion, and each big hill's crest
 const LINES = { heal: ['Heal mastered', 'Heal: restores deeper'], fire: ['Fireball mastered', 'Fireball: glows brighter'],
   bolt: ['Lightning bolt mastered', 'Lightning bolt: strikes harder'], acid: ['Acid spray mastered', 'Acid spray: burns deeper'],   // step 5e-2 (Barney)
@@ -9296,6 +9639,8 @@ function freshRecord() {
     spell: 'fire', belt: 'scarf',         // the attack spell chosen and the belt worn
     played: false, hintsHidden: false,    // whether the first run has been played, and whether the hints were hidden
     furthest: -1,                         // the furthest place reached (0 to 3; 4 the win), for "Furthest yet"
+    rotOpen: false, rotNews: false,       // design system 23: The Endless Rot open (The Veiled Ghost beaten), and its news plaque shown
+    lastRun: '',                          // the run last played, so the choice of run can open on The Endless Rot
     doubled: '' };                        // the day of the last doubled Echo Infusion run (the device's own date)
 }
 // a record read back: every value checked, so a damaged one goes back to its start rather than breaking the game
@@ -9311,6 +9656,8 @@ function readRecord(old) {
   r.belt = BELTS.indexOf(old.belt) >= 0 && r.belts[old.belt] ? old.belt : 'scarf';
   r.played = old.played === true; r.hintsHidden = old.hintsHidden === true;
   r.furthest = whole(old.furthest, -1, PLACES.length, -1);
+  r.rotOpen = old.rotOpen === true; r.rotNews = old.rotNews === true;   // design system 23
+  r.lastRun = ['bare', 'infusion', 'rot'].indexOf(old.lastRun) >= 0 ? old.lastRun : '';
   r.doubled = typeof old.doubled === 'string' && /^\d{4}-\d\d-\d\d$/.test(old.doubled) ? old.doubled : '';
   const log = readRunLog(old.runLog);  // the Night pass, part D: the playtest's run log (the run log, below), kept by every copy
   if (log) r.runLog = log;
@@ -9352,11 +9699,18 @@ function bankRun(g, lb, ended, bonus) {
   const b = { was: rec.echo, stolen, daily: daily ? stolen : null, first: ended && !rec.played, furthest: rec.furthest };
   rec.echo += stolen;
   if (daily) rec.doubled = day;
-  rec.furthest = Math.max(rec.furthest, g.won ? PLACES.length : g.p);
+  if (g.run !== 'rot') rec.furthest = Math.max(rec.furthest, g.won ? PLACES.length : g.p);   // the journey's furthest place (an arena is no place reached)
   if (ended) rec.played = true;
   delete rec.saved;                    // part C: game over, Finish, the second loop's win, Restart and Quit to menu leave no run to continue
   lb.saveProgress();
   return (g.banked = b);
+}
+// design system 23 (NewRun): the news plaque, once, the first time a run ends (or is won) after The Veiled Ghost has been beaten
+function rotNews(g, lb) {
+  const rec = lb.progress;
+  if (g.check || !rec || !rec.rotOpen || rec.rotNews) return undefined;
+  rec.rotNews = true; lb.saveProgress();
+  return { heading: 'The Endless Rot', line: ROT_LINE, note: 'Choose it after Start game.' };
 }
 // the run's end (RunEnd): the kit draws it; these are its rules
 function runEndInfo(g, lb) {
@@ -9364,10 +9718,25 @@ function runEndInfo(g, lb) {
   runEnded(g, lb, 'over');             // the Night pass, part D: the playtest's run log (it notes only the first ending)
   let near = null;
   if (boss && boss.hp > 0 && boss.name && boss.st !== 'wait' && boss.st !== 'defeat' && boss.st !== 'done') near = { boss: boss.name, left: boss.hp / boss.max };
-  else if (!b.first && g.p > b.furthest) near = { furthest: PLACE_NAMES[g.p] };   // not on the very first run: it has nothing to beat (Barney)
+  else if (!b.first && g.p > b.furthest && g.run !== 'rot') near = { furthest: PLACE_NAMES[g.p] };   // not on the very first run: it has nothing to beat (Barney); an arena is no place reached (The Endless Rot's run's end: step 6)
   const u = nextUnlock(rec), now = Math.min(b.stolen, rec.echo);   // step 5e-1: asked again after the Echo Shrine, so as the bank now stands
-  return { near, daily: b.daily, first: b.first, scored: g.run === 'bare', shrine: { bank: rec.echo },
-    next: u ? { kind: u.kind, name: u.name, towards: u.towards, price: u.price, was: rec.echo - now, now } : null };
+  const next = u ? { kind: u.kind, name: u.name, towards: u.towards, price: u.price, was: rec.echo - now, now } : null, news = rotNews(g, lb);
+  if (g.run === 'rot') return rotEndInfo(g, lb, b, next, news);
+  const o = { near, daily: b.daily, first: b.first, scored: g.run === 'bare', shrine: { bank: rec.echo }, next };
+  if (g.run === 'infusion') o.best = { id: 'infusion', n: lb.wisps, words: 'echo' };   // design system 23 (HighScores): the most echo in one Echo Infusion run, its "New best"
+  if (news) o.news = news;
+  return o;
+}
+// design system 23 (RunEnd): The Endless Rot's run's end: the monsters felled as the score, "Fell in Wave 5" with its bar and how many were
+// left, "22 echo stolen" (what its completed waves paid), and its best run in Personal bests ("61 felled · wave 7"), with "Your best"
+// when it falls short; never on the high scores
+function rotEndInfo(g, lb, b, next, news) {
+  const W = g.wave, felled = g.felled + (g.felledDue || 0), wave = W ? W.n : 1;
+  const left = W && !W.done ? W.size - W.felled : 0;
+  const o = { near: W ? { wave: 'Wave ' + wave, left: W.size ? left / W.size : 0, count: left } : null, first: b.first, scored: false, shrine: { bank: lb.progress.echo }, next,
+    count: { n: felled, unit: 'felled' }, stolen: b.stolen, best: { id: 'rot', n: felled, words: 'felled \u00b7 wave ' + wave } };
+  if (news) o.news = news;
+  return o;
 }
 
 /* ---------- the Echo Shrine (step 5e-1; design system version 12, EchoShrine), built with the kit's parts (lb.ui) ----------
@@ -9474,36 +9843,73 @@ function shrinePlaque(lb, ui, back) {
    Reckoning. It opens on The Echo Infusion. Play again repeats the run just played (lb.run). ---------- */
 const anyBought = (rec) => rec.sockets.health > 1 || rec.sockets.mana > 1 || rec.bolt || rec.acid || rec.hysteria || BELTS.some((k) => rec.belts[k]);
 const RUNS = [
-  { id: 'bare', name: 'The Bare Reckoning', note: 'Stripped of all favour, face the dark with naked steel alone. Your agony is etched into history.', terms: 'On the high scores \u00b7 your spell and belt, one potion of each' },
-  { id: 'infusion', name: 'The Echo Infusion', note: 'Gorged on stolen power. Unleash your full arsenal, but expect no immortalisation.', terms: "Everything you've bought \u00b7 not on the high scores" },
+  { id: 'bare', name: 'The Bare Reckoning', note: 'Stripped of all favour, face the dark with naked steel alone. Your agony is etched into history.', terms: 'On the high scores · your spell and belt, one potion of each' },
+  // design system 23 (Modes): The Echo Infusion's terms end "your best run is kept" (Barney's ask), as it is kept in Personal bests
+  { id: 'infusion', name: 'The Echo Infusion', note: 'Gorged on stolen power. Unleash your full arsenal, but expect no immortalisation.', terms: "Everything you've bought · your best run is kept" },
 ];
+// design system 23 (Modes, NewRun): The Endless Rot in the choice of run, and Barney's line for it
+const ROT_LINE = 'No path forward. No mercy given. Stand in the filth and drown in the tide until your steel breaks.';
+const ROT_RUN = { id: 'rot', name: 'The Endless Rot', note: ROT_LINE, terms: "Everything you've bought · your best run is kept" };
+const LOCK_SVG = '<svg viewBox="0 0 14 16" aria-hidden="true"><rect x="1.5" y="7" width="11" height="8" rx="1"/><path d="M4 7 V4.6 A3 3 0 0 1 10 4.6 V7"/></svg>';
+// the choice comes once something has been bought, as before, or once The Endless Rot is open even if nothing has; otherwise Start game
+// goes straight into The Bare Reckoning. It opens on the run last played if that was The Endless Rot, otherwise on The Echo Infusion; with
+// no Echo Infusion (the Ghost beaten, nothing bought) on The Endless Rot, as the design's preview shows (the handover's reading 7).
+// CM215 (Barney, 14 November 2026: "In playtest mode have the endless rot unlocked as default in this version of the game only"): in the
+// playtest's copy it is open from the start, without the saved flag (the flag still comes with the Ghost, and its news plaque with it); a
+// new player's choice still opens on The Bare Reckoning, as it opens on The Endless Rot only once the Ghost is beaten or it was last played
 function chooseRun(lb, start) {
-  if (!anyBought(lb.progress) || wantCheck(lb)) return start('bare');   // step 5f-1: the play check needs no choice
-  const pick = { id: 'infusion' };      // it opens on The Echo Infusion (Barney, 8 November 2026; it was the run last played, at first The Bare Reckoning)
-  lb.ui.open((ui) => modesPlaque(lb, ui, start, pick), 1);
+  if (wantCheck(lb)) return start('bare');   // step 5f-1: the play check needs no choice
+  if (lb.test && lb.test.rot) return start('rot');   // design system 23: Testing's straight way into The Endless Rot
+  const rec = lb.progress, bought = anyBought(rec), open = !!rec.rotOpen || PLAYTEST;
+  if (!bought && !open) return start('bare');
+  const runs = bought ? RUNS.slice() : [RUNS[0]];
+  if (open) runs.push(ROT_RUN); else runs.push(Object.assign({ locked: true, lockTerms: 'Locked · fell The Veiled Ghost' }, ROT_RUN));   // locked: shown as a goal
+  const pick = { id: open && (rec.lastRun === 'rot' || (!bought && !!rec.rotOpen)) ? 'rot' : 'infusion' };
+  const at = runs.filter((r) => !r.locked).findIndex((r) => r.id === pick.id);
+  lb.ui.open((ui) => modesPlaque(lb, ui, start, pick, runs), Math.max(0, at));
 }
-function modesPlaque(lb, ui, start, pick) {
-  const phone = ui.phone, items = [];
-  const { panel, face } = ui.plaque('gh-md', 560, 804, phone ? 'gap:10px;padding:12px 14px 14px' : 'gap:12px;padding:20px 20px 16px');
-  const list = ui.el('div', 'lb-modes' + (phone ? ' is-row' : ''));
+// runs: the entries before Hysteria, in order. Four in all are drawn two by two, on a computer (the plaque 780 wide) and a phone (804):
+// left, right, up and down choose (down from the lower row to Start, up from Start or Back to the choice); three keep today's layouts
+function modesPlaque(lb, ui, start, pick, runs) {
+  runs = runs || RUNS;
+  const phone = ui.phone, items = [], four = runs.length + 1 === 4;
+  const { panel, face } = four ? ui.plaque('gh-md', 780, 804, phone ? 'gap:10px;padding:12px 14px 14px' : 'gap:10px;padding:16px 20px 12px')
+    : ui.plaque('gh-md', 560, 804, phone ? 'gap:10px;padding:12px 14px 14px' : 'gap:12px;padding:20px 20px 16px');
+  const list = ui.el('div', 'lb-modes' + (phone || four ? ' is-row' : '') + (four ? ' is-four' : ''));
   list.setAttribute('role', 'radiogroup'); list.setAttribute('aria-labelledby', 'gh-md');
-  const buttons = [];
-  RUNS.forEach((r, i) => {
-    const b = ui.el('button', 'lb-mode', '<span class="name"></span><span class="note"></span><span class="terms"></span>');
+  const buttons = [], cell = [];        // cell: each entry's item index, or -1 when locked (Hysteria the last)
+  const lockedEntry = (name, note, terms) => {
+    const b = ui.el('button', 'lb-mode is-locked', '<span class="name">' + LOCK_SVG + '</span><span class="lock-note"></span><span class="terms"></span>');
+    b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', 'false'); b.setAttribute('aria-disabled', 'true');
+    b.querySelector('.name').append(document.createTextNode(name)); b.querySelector('.lock-note').textContent = note; b.querySelector('.terms').textContent = terms;
+    list.append(b); cell.push(-1);
+  };
+  runs.forEach((r) => {
+    if (r.locked) return lockedEntry(r.name, r.note, r.lockTerms);
+    const i = items.length, b = ui.el('button', 'lb-mode', '<span class="name"></span><span class="note"></span><span class="terms"></span>');
     b.type = 'button'; b.setAttribute('role', 'radio');
     b.querySelector('.name').textContent = r.name; b.querySelector('.note').textContent = r.note; b.querySelector('.terms').textContent = r.terms;
-    if (dailyDue(lb, r.id)) b.append(ui.el('span', 'daily', '<span class="lb-daily-mark">\u00d7' + DAILY + '</span>echo for the first run today'));   // design system 18 (Modes)
+    if (dailyDue(lb, r.id)) b.append(ui.el('span', 'daily', '<span class="lb-daily-mark">×' + DAILY + '</span>echo for the first run today'));   // design system 18 (Modes)
     b.addEventListener('click', () => ui.select(i));   // a click or a tap chooses; Start (or Enter) starts
-    buttons.push(b); list.append(b);
-    items.push({ el: b, menu: true, noClick: true, focus: () => { pick.id = r.id; buttons.forEach((x, j) => x.setAttribute('aria-checked', j === i ? 'true' : 'false')); return b; }, activate: () => { lb.sfx('confirm'); ui.close(); start(r.id); } });
+    buttons.push(b); list.append(b); cell.push(i);
+    items.push({ el: b, menu: true, noClick: true, focus: () => { pick.id = r.id; buttons.forEach((x) => x.setAttribute('aria-checked', x === b ? 'true' : 'false')); return b; }, activate: () => { lb.sfx('confirm'); ui.close(); start(r.id); } });
   });
-  const locked = ui.el('button', 'lb-mode is-locked', '<span class="name"><svg viewBox="0 0 14 16" aria-hidden="true"><rect x="1.5" y="7" width="11" height="8" rx="1"/><path d="M4 7 V4.6 A3 3 0 0 1 10 4.6 V7"/></svg>Hysteria</span><span class="lock-note"></span><span class="terms">Coming soon \u00b7 500 echo at the Echo Shrine</span>');
-  locked.type = 'button'; locked.setAttribute('role', 'radio'); locked.setAttribute('aria-checked', 'false'); locked.setAttribute('aria-disabled', 'true');
-  locked.querySelector('.lock-note').textContent = HYSTERIA;
-  list.append(locked);
+  lockedEntry('Hysteria', HYSTERIA, 'Coming soon · 500 echo at the Echo Shrine');
   const go = ui.button('Start', true, true), back = ui.button('Back');
   const leave = () => { lb.sfx('back'); ui.close(); };
+  const goAt = items.length;
   items.push({ el: go, activate: () => { lb.sfx('confirm'); ui.close(); start(pick.id); } }, { el: back, activate: leave });
+  if (four) {                          // two by two: entries 0 1 over 2 3, by direction; a locked one is never chosen
+    const to = (k) => (k >= 0 && k < cell.length ? cell[k] : -1);
+    cell.forEach((it, k) => {
+      if (it < 0) return;
+      const col = k % 2, row = Math.floor(k / 2), stay = () => ui.select(it), go2 = (j) => () => (j >= 0 ? ui.select(j) : stay());
+      Object.assign(items[it], { left: go2(col ? to(k - 1) : -1), right: go2(col ? -1 : to(k + 1)), up: go2(row ? to(k - 2) : -1),
+        down: row ? () => ui.select(goAt) : () => { const j = to(k + 2); ui.select(j >= 0 ? j : goAt); } });
+    });
+    const backUp = () => { const j = items.findIndex((it, n) => n < goAt && it.el.getAttribute('aria-checked') === 'true'); ui.select(j >= 0 ? j : 0); };
+    items[goAt].up = backUp; items[goAt + 1].up = backUp;
+  }
   if (phone) {
     go.style.padding = '0 22px'; back.style.padding = '0 18px';
     const head = ui.el('div', 'lb-header'); head.append(ui.heading('gh-md', 'Choose a run'), go, back);
@@ -9511,7 +9917,7 @@ function modesPlaque(lb, ui, start, pick) {
   } else {
     const btns = ui.el('div', 'lb-btns'); btns.style.marginTop = '2px'; btns.append(go, back);
     face.append(ui.heading('gh-md', 'Choose a run'), ui.rule(), list, btns);
-    if (!ui.touch) { const h = ui.hint(ui.kbd('up') + ' ' + ui.kbd('down') + ' choose \u00b7 ' + ui.kbd('Enter') + ' start \u00b7 ' + ui.kbd('Backspace') + ' back'); h.style.textAlign = 'center'; face.append(h); }
+    if (!ui.touch) { const h = ui.hint((four ? ui.kbd('left') + ' ' + ui.kbd('right') + ' ' : '') + ui.kbd('up') + ' ' + ui.kbd('down') + ' choose · ' + ui.kbd('Enter') + ' start · ' + ui.kbd('Backspace') + ' back'); h.style.textAlign = 'center'; face.append(h); }
   }
   return { panel, items, opts: { back: leave } };
 }
@@ -9525,13 +9931,27 @@ let G = null;                    // the run's state, for the console while testi
 // Step 5f-1 (the playtest, Barney, 8 November 2026): friends and family play the playtest's own copy, at its own address (or with ?playtest),
 // which has no Testing screen and no way into it; its speed test link (?check) makes Start game run the play check (below)
 const PLAYTEST = /\/gloam-hallow-playtest\//.test(location.pathname) || /[?&]playtest\b/.test(location.search);
+// Barney, 14 November 2026: the run log on his own test link too (its address only), to measure how far he gets as The Endless Rot's
+// difficulty is tuned; never in the arcade's build elsewhere or the CrazyGames build. Its menu's "Your runs" opens ?runs, as the playtest's
+const TEST_LINK = /\/lantern-box-test\//.test(location.pathname);
+const RUN_LOG = PLAYTEST || TEST_LINK;
 const CHECK_LINK = /[?&]check\b/.test(location.search);
 const wantCheck = (lb) => CHECK_LINK || !!(lb.test && lb.test.check);
+// The Endless Rot's play check (Barney, 14 November 2026, to check the mode on each device): ?check=rot, or Testing's Play check with
+// The Endless Rot on as well
+const CHECK_ROT = /[?&]check=rot\b/.test(location.search);
+const wantRotCheck = (lb) => CHECK_ROT || !!(lb.test && lb.test.check && lb.test.rot);
 // the play check's figures (see the play check, at the end): seconds to settle, to time a leg's frames and to time its drawing, as the
 // test page's speed check (WARM, RUN, LOAD), and at most 6 s of play while its drawing is timed; eight frames a refresh then; 30 ways for
 // each place's encounters to fall; the picture settled once at one level for 3.2 s (10 s at most); 150 walked before a stretch's timing;
 // at a boss, the sword swung from within 125 of it and a step back nearer than 90
 const CHECK = { warm: 1.5, run: 4, load: 2.5, loadPlay: 6, reps: 8, seeds: 30, settle: 3.2, settleMax: 10, ahead: 150, reach: 125, near: 90 };
+// The Endless Rot's play check: each arena's last wave the first time round and again, harder (waves 3 to 24, the most on screen 3 to 8);
+// while the arena fills, a monster sent every 0.4 s; then the wave's own gap, and he strikes only while the wave has its most on screen, so
+// it stays at its most or one under
+// settle: the picture settled once its level has held 8.5 s with the arena full (Automatic watches 4 s of frames at a time, so a whole
+// one of them falls in it), 25 s at most
+const ROT_CHECK = { waves: [3, 6, 9, 12, 15, 18, 21, 24], fill: 0.4, settle: 8.5, settleMax: 25 };
 const CHECK_NAME = 'gh-check:';   // the window's name while a play check's result waits for the title
 const PICTURE_NAMES = { auto: 'Automatic', best: 'Best', faster: 'Faster', fastest: 'Fastest' };
 const PLACE_SHORT = ['Night', 'Blood Red Rain', 'Dawn', 'Mist'];
@@ -9575,11 +9995,12 @@ function readRunLog(o) {
 const runsOf = (lb) => (lb.progress && lb.progress.runLog) || { n: 0, runs: [] };
 const runsSave = (lb) => { if (lb) lb.saveProgress(); };
 function runBegin(g, lb) {
-  if (!PLAYTEST || g.check || !lb.progress) return;
+  if (!RUN_LOG || g.check || !lb.progress) return;
   const R = lb.progress.runLog || (lb.progress.runLog = { n: 0, runs: [] });
   if (runLeft) { runLeft.end = 'restart'; runLeft = null; }
   R.n++;
   g.log = { n: R.n, day: today(), run: g.run, loop: g.loop, t: 0, p: g.p, sec: '', boss: false, lost: [], end: '', echo: null, won1: null };
+  if (g.run === 'rot') Object.assign(g.log, { tune: ROT_RAMP.tune, wave: 0, felled: 0, wt: {}, graces: [], gained: [] });   // The Endless Rot's own (rotRunLine)
   R.runs.unshift(g.log);
   if (R.runs.length > RUNS_KEPT) R.runs.length = RUNS_KEPT;
   runLb = lb;
@@ -9588,6 +10009,7 @@ function runBegin(g, lb) {
 // where he is: the place, and the path's section letter, its stretch's number (st, 1 to 10; not n, the log's run number; the climb, part A: a letter can come twice in a
 // place, and the halves split after stretch 5) and how far along the path to the arena, or in the boss's fight
 function runWhere(g) {
+  if (g.run === 'rot') return { p: g.p, loop: g.loop, wave: g.wave ? g.wave.n : g.resumeWave || 0, boss: false };   // The Endless Rot: the wave
   const b = g.boss, fight = !!b && (b.st === 'arrive' || b.st === 'fight');
   const i = fight ? -1 : g.L.sections.findIndex((q) => g.x >= q.x0 && g.x < q.x1), s = i >= 0 ? g.L.sections[i] : null;
   return { p: g.p, loop: g.loop, sec: s ? String(s.id) : '', st: s ? i + 1 : null, at: fight ? null : Math.max(0, Math.min(100, Math.round(100 * g.x / g.L.arena))), boss: fight };
@@ -9597,6 +10019,7 @@ function runNote(g, lb, save) {
   const L = g.log;
   if (!L) return null;
   if (!L.end) Object.assign(L, runWhere(g), { t: Math.round(lb.time + (g.t0 || 0)) });   // part C: a continued run's time carries on
+  if (!L.end && g.run === 'rot') Object.assign(L, { felled: g.felled + (g.felledDue || 0), up: { reach: g.sword.reach, bite: g.sword.bite, heal: g.spells.heal, atk: g.spells[g.attack], attack: g.attack } });
   if (save) runsSave(lb);
   return L;
 }
@@ -9605,6 +10028,7 @@ function runLost(g, lb, kind) {
   if (!L || L.end) return;
   const b = g.boss, by = kind === 'pit' ? { by: 'pit', atk: '' } : g.hitBy || { by: '', atk: '' };
   L.lost.push({ t: L.t, p: L.p, loop: L.loop, sec: L.sec, st: L.st, at: L.at, boss: L.boss, by: by.by, atk: by.atk, left: L.boss ? Math.round(100 * b.hp / b.max) : null });
+  if (g.run === 'rot') L.lost[L.lost.length - 1].wave = L.wave;   // The Endless Rot: the wave it went in
   runsSave(lb);
 }
 // part G: a life gained after a boss, or at five lives its 10 echo instead, for the playtest's run log (how often players reach five)
@@ -9624,7 +10048,7 @@ function runEnded(g, lb, end) {
   if (end === 'quit') { runLeft = L; Promise.resolve().then(() => { runLeft = null; }); }
   runsSave(lb);
 }
-if (PLAYTEST) {                        // the page hidden or closed mid-run: the time and where it was left kept
+if (RUN_LOG) {                         // the page hidden or closed mid-run: the time and where it was left kept
   const away = () => { if (G && G.log && !G.log.end && runLb) runNote(G, runLb, true); };
   addEventListener('pagehide', away);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') away(); });
@@ -9644,6 +10068,7 @@ const clockText = (s) => {
 // the kit sends it only when it changes, and clears it at the run's end and on quitting). Game state only, nothing about the player.
 function portalNote(g, lb) {
   if (!g.L) return;
+  if (g.run === 'rot') { lb.portalContext({ place: PLACE_SHORT[g.p], run: ROT_NAME, wave: g.wave ? g.wave.n : 0, lives: Math.max(0, g.lives) }); return; }   // step 5: the mode and the wave
   const w = runWhere(g), run = RUNS.find((x) => x.id === g.run);
   const o = { place: PLACE_SHORT[w.p], loop: w.loop, lives: Math.max(0, g.lives), run: run ? run.name : '', boss: w.boss };
   if (!w.boss && w.st) { o.stretch = w.st; o.section = w.sec; }
@@ -9658,6 +10083,7 @@ function runWhereText(lb, w, twice) {   // twice: the run went round again, so t
   return at + (w.boss === true && twice && w.loop === 2 ? ' (second loop)' : '');
 }
 function runLine(lb, r) {
+  if (r.run === 'rot') return rotRunLine(lb, r);   // The Endless Rot's own line
   const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
   const twice = r.loop === 2, run = RUNS.find((x) => x.id === r.run);
   const lost = Array.isArray(r.lost) ? r.lost.filter((q) => q && typeof q === 'object').slice(0, 9) : [];
@@ -9683,6 +10109,34 @@ function runGainedText(lb, r, twice) {
   const name = (q) => lb.world.bossNames[PLACES[q.p]] + (twice && q.loop === 2 ? ' (second loop)' : '');
   const won = list.filter((q) => !q.five).map(name), five = list.filter((q) => q.five).map(name);
   return ' ' + [won.length ? 'Life gained after ' + won.join(', ') : '', five.length ? (won.length ? 'at' : 'At') + ' five lives after ' + five.join(', ') : ''].filter(Boolean).join('; ') + '.';
+}
+/* The Endless Rot's run in the log (Barney, 14 November 2026, to measure the difficulty as it is tuned), one paragraph, e.g. "Run 7,
+   2026-11-14, The Endless Rot (tuning 2): game over in wave 9 (Dawn) after 8:12 played, 87 felled, 34 echo. Reached wave 4 at 1:55, wave 7
+   at 4:40. Lives lost: wave 4 (Blood Red Rain) at 2:10, a ghoul's swipe. Lives gained after wave 6. Graces: Keen Edge after wave 3. At
+   the end: sword reach 2 of 2, bite 1 of 2, heal 2 of 3, fireball 3 of 3." Every value read back as data and checked. */
+const ATK_NAME = { fire: 'fireball', bolt: 'lightning bolt', acid: 'acid spray' };
+function rotRunLine(lb, r) {
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null), int = (v) => Number.isInteger(v) && v > 0 && v < 1e6;
+  const wv = (q) => (int(q.wave) ? 'wave ' + q.wave + ' (' + PLACE_SHORT[arenaOfWave(q.wave)] + ')' : 'its first card');
+  const lost = Array.isArray(r.lost) ? r.lost.filter((q) => q && typeof q === 'object').slice(0, 12) : [];
+  const cause = (q) => (RUN_MON[q.by] ? RUN_MON[q.by] + "'s " + (RUN_ATK[q.atk] || 'blow') : 'a blow');
+  const day = typeof r.day === 'string' && /^\d{4}-\d\d-\d\d$/.test(r.day) ? ', ' + r.day : '';
+  const echo = num(r.echo) != null ? Math.round(r.echo) + ' echo' : 'no echo banked', felled = num(r.felled) != null ? Math.round(r.felled) + ' felled, ' : '';
+  const out = ['Run ' + (num(r.n) || '?') + day + ', ' + ROT_NAME + (int(r.tune) ? ' (tuning ' + r.tune + ')' : '') + ': ' + (RUN_END[r.end] || 'left by closing the page') +
+    ' in ' + wv(r) + ' after ' + clockText(num(r.t) || 0) + ' played, ' + felled + echo + '.'];
+  const wt = r.wt && typeof r.wt === 'object' && !Array.isArray(r.wt) ? r.wt : {};
+  const arenas = Object.keys(wt).map(Number).filter((n) => int(n) && n > 1 && n % 3 === 1 && num(wt[n]) != null).sort((a, b) => a - b).slice(0, 30);
+  if (arenas.length) out.push('Reached ' + arenas.map((n) => 'wave ' + n + ' at ' + clockText(wt[n])).join(', ') + '.');
+  out.push(lost.length ? 'Lives lost: ' + lost.map((q) => wv(q) + ' at ' + clockText(num(q.t) || 0) + ', ' + cause(q)).join('; ') + '.' : 'No lives lost.');
+  const gained = Array.isArray(r.gained) ? r.gained.filter((q) => q && int(q.wave)).slice(0, 20) : [];
+  const life = gained.filter((q) => !q.five).map((q) => q.wave), five = gained.filter((q) => q.five).map((q) => q.wave);
+  if (life.length) out.push('Lives gained after wave' + (life.length > 1 ? 's ' : ' ') + life.join(', ') + '.');
+  if (five.length) out.push('At five lives, ' + LIFE_ECHO + ' echo instead after wave' + (five.length > 1 ? 's ' : ' ') + five.join(', ') + '.');
+  const gr = Array.isArray(r.graces) ? r.graces.filter((q) => q && graceOf(q.id) && int(q.wave)).slice(0, 20) : [];
+  if (gr.length) out.push('Graces: ' + gr.map((q) => graceOf(q.id).name + ' after wave ' + q.wave).join(', ') + '.');
+  const u = r.up && typeof r.up === 'object' ? r.up : null, lv = (v, top) => (Number.isInteger(v) && v >= 0 && v <= top ? v + ' of ' + top : '?');
+  if (u) out.push('At the end: sword reach ' + lv(u.reach, 2) + ', bite ' + lv(u.bite, 2) + ', heal ' + lv(u.heal, 3) + ', ' + (ATK_NAME[u.attack] || 'the attack spell') + ' ' + lv(u.atk, 3) + '.');
+  return out.join(' ');
 }
 function runsLines(lb) {
   const R = runsOf(lb);
@@ -9712,6 +10166,7 @@ function readSaved(o, lb) {            // a saved run read back, every value che
   const int = (v, a, b) => Number.isInteger(v) && v >= a && v <= b, unit = (v) => typeof v === 'number' && v >= 0 && v <= 1;
   const ids = (v, ok) => Array.isArray(v) && v.every((x) => typeof x === 'string' && ok(x)) && new Set(v).size === v.length;
   if (!obj(o) || o.v !== RUN_V) return null;
+  if (o.run === 'rot') return readRotSaved(o);   // step 5: The Endless Rot's own
   if ((o.run !== 'bare' && o.run !== 'infusion') || !int(o.loop, 1, 2) || !int(o.p, 0, PLACES.length - 1) || !int(o.cp, 0, 2) || !int(o.lives, 0, SAVED_LIVES)) return null;
   if (o.slots != null && !int(o.slots, LIVES, LIVES_MAX)) return null;   // part G: the row's lanterns (a run saved before part G has none)
   if (!unit(o.health) || !unit(o.mana) || !int(o.armour, 0, 3) || !obj(o.sword) || !int(o.sword.reach, 0, 2) || !int(o.sword.bite, 0, 2)) return null;
@@ -9738,7 +10193,7 @@ function readSaved(o, lb) {            // a saved run read back, every value che
 // the run written: o.fresh, a lantern lit or a place begun (a new continue); o.full, a life just lost (he comes back with both bars full);
 // o.health, The Grave Refuses' rising. Never the play check, nor a run already banked.
 function runSave(g, lb, o) {
-  if (g.check || g.banked || !lb.progress) return;
+  if (g.check || g.banked || !lb.progress || g.run === 'rot') return;   // The Endless Rot keeps its own saved run (step 5), never the journey's
   o = o || {};
   if (o.fresh) g.usedSave = false;
   const bar = (v) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 1000;
@@ -9755,7 +10210,7 @@ function runSave(g, lb, o) {
 // echo is banked the way Quit to menu banks it: no run's end, and it uses neither the day's doubled run nor the first run. raw: as stored.
 function endSaved(lb, raw, end) {
   const rec = lb.progress, num = (v, a, b) => (typeof v === 'number' && isFinite(v) ? Math.max(a, Math.min(b, Math.floor(v))) : a);
-  const echo = num(raw.echo, 0, 1e9), n = num(raw.n, 0, 1e9);
+  const echo = num(raw.run === 'rot' && raw.now && typeof raw.now === 'object' ? raw.now.echo : raw.echo, 0, 1e9), n = num(raw.n, 0, 1e9);   // step 5: The Endless Rot's echo so far
   rec.echo += echo;
   if (Number.isInteger(raw.p) && raw.p >= 0 && raw.p < PLACES.length) rec.furthest = Math.max(rec.furthest, raw.p);   // only a place that can be read
   const L = n > 0 && rec.runLog ? rec.runLog.runs.find((r) => r.n === n && !r.end) : null;   // the playtest's run log
@@ -9770,6 +10225,7 @@ function settleSaved(lb) {             // as the page opens
   if (!raw) return;
   const sv = readSaved(raw, lb);
   if (sv && !sv.used && sv.lives > 0) { rec.saved = sv; return; }   // it waits on the title
+  if (raw.run === 'rot') { const nw = (readRotSaved(raw) || {}).now; if (nw && nw.felled > 0) lb.bests.offer('rot', nw.felled, 'felled \u00b7 wave ' + nw.wave); }   // step 5 (Barney, 14 November 2026): its felled count still stands for the personal best
   const echo = endSaved(lb, raw, 'closed');
   lb.titleLine(echo > 0 ? 'Your last run ended. Its ' + echo + ' echo was kept.' : 'Your last run ended.');   // Barney's words (PlaqueLine)
 }
@@ -9785,7 +10241,7 @@ function resumeRun(g, lb, sv) {
   g.graces = {}; g.bound = []; sv.graces.forEach((id) => { g.graces[id] = true; g.bound.push(id); }); heldToKit(g, lb);
   g.taught = {}; sv.taught.forEach((id) => { g.taught[id] = true; });
   sv.used = true; lb.progress.saved = sv;   // one continue for each lantern lit
-  const L = PLAYTEST && sv.n > 0 && lb.progress.runLog ? lb.progress.runLog.runs.find((r) => r.n === sv.n && !r.end) : null;   // the run log's own line carries on
+  const L = RUN_LOG && sv.n > 0 && lb.progress.runLog ? lb.progress.runLog.runs.find((r) => r.n === sv.n && !r.end) : null;   // the run log's own line carries on
   if (L) { g.log = L; runLb = lb; g.t0 = Math.max(g.t0, typeof L.t === 'number' && isFinite(L.t) ? Math.round(L.t) : 0); }
   lb.saveProgress();
   loadPlace(g, lb, sv.p, sv.cp, true);
@@ -9817,11 +10273,13 @@ LanternBox.game({
   // step 5f-1: a play check just finished shows its result on the title (5f-2: only if it couldn't in play); the Night pass, part D: the
   // playtest page's Send my runs (?runs) opens the run log on the title
   // part C: a run that can't be continued is ended first (not on the speed test's link, which leaves it be)
-  init(lb) { if (!CHECK_LINK) settleSaved(lb); if (!checkShown(lb) && PLAYTEST && RUNS_LINK) lb.ui.open((ui) => runsPlaque(lb, ui)); },
+  init(lb) { if (!CHECK_LINK) settleSaved(lb); if (!checkShown(lb) && RUN_LOG && RUNS_LINK) lb.ui.open((ui) => runsPlaque(lb, ui)); },
   // part C (kit 0.21.0): Continue on the title while a run waits, with its place and lantern, and the relight plaque's facts and choices
   resume: {
     waiting(lb) {
       const sv = savedWaiting(lb);
+      if (sv && sv.run === 'rot') return { where: PLACE_SHORT[arenaOfWave(sv.wave)] + ' \u00b7 Wave ' + sv.wave, run: ROT_NAME, lives: sv.lives, echo: sv.now.echo,
+        again: sv.wave >= 13, score: sv.felled + ' felled', button: 'Return to the wave' };   // step 5 (TitleArch, Relight): "Dawn · Wave 7", "3 lives left · 54 felled"
       return sv ? { where: PLACE_SHORT[sv.p] + ' \u00b7 ' + LANTERN[sv.cp], run: RUNS.find((r) => r.id === sv.run).name, lives: sv.lives, echo: sv.echo, again: sv.loop === 2 } : null;
     },
     back(lb, start) { const sv = savedWaiting(lb); if (sv) { RESUME = sv; start(sv.run); } },
@@ -9832,11 +10290,15 @@ LanternBox.game({
     if (g && g.check && g.check.result) lb.ui.open((ui) => checkPlaque(lb, ui, g.check.result, true));   // 5f-2: the result, at once, over the paused scene
   },
   onHintsHidden(lb) { lb.progress.hintsHidden = true; lb.saveProgress(); if (G) G.teach = false; },   // step 5e-4: hidden for good
+  // design system 23 (HighScores): Personal bests beside The Bare Reckoning's table: The Endless Rot's best (with "Your best" when a run
+  // falls short) and The Echo Infusion's (with none: the handover's reading 9)
+  bests: { table: 'The Bare Reckoning', runs: [{ id: 'rot', name: 'The Endless Rot', yours: true }, { id: 'infusion', name: 'The Echo Infusion' }] },
   shrine: { bank: (lb) => lb.progress.echo, open: openShrine },   // kit 0.10.2: on the title's arch; step 5e-1: the Echo Shrine itself
   chooseRun,   // step 5e-1: the choice of run, once anything is bought
   // Testing (delete for the finished game): where a run starts, and help for trying it out; never in the playtest's copy (step 5f-1)
   test: PLAYTEST ? undefined : { options: [
-    { id: 'check', name: 'Play check', toggle: true, note: 'Start game plays by itself for about two minutes and times each place and its boss. Switch it off to play.' },   // step 5f-1
+    { id: 'check', name: 'Play check', toggle: true, note: 'Start game plays by itself for about two minutes and times each place and its boss (with The Endless Rot on too, each arena\'s waves). Switch it off to play.' },   // step 5f-1
+    { id: 'rot', name: 'The Endless Rot', toggle: true, note: "Start game plays The Endless Rot as far as it is built, in Start at's arena. Switch it off for the journey." },   // design system 23, until its way in is built (step 6)
     { id: 'teach', name: 'Teaching in play', choices: [['saved', 'First run only'], ['always', 'Always']] },   // step 5e-4
     { id: 'spell', name: 'Attack spell', choices: [['shrine', 'As chosen'], ['fire', 'Fireball'], ['bolt', 'Lightning bolt'], ['acid', 'Acid spray']] },   // step 5e-2
     { id: 'place', name: 'Start at', choices: [['night', 'Night'], ['storm', 'Blood Red Rain'], ['dawn', 'Dawn'], ['mist', 'Mist']] },
@@ -9860,14 +10322,14 @@ LanternBox.game({
       spells: { heal: t.all ? 3 : 0, fire: t.all ? 3 : 0 }, spellList: t.all ? ['heal', 'fire'] : [], sel: 0, castBuf: 0, cast: null, healT: 9,
       manaShown: 1, loot: [], shots: [], chest: null, hand: null,
       pots: { health: 0, mana: 0 }, potLine: {}, drinkT: 9, drinkKind: 'health', fills: [],   // version 11: the potions kept (5e-1: how many)
-      run: lb.run === 'infusion' ? 'infusion' : 'bare', echoDue: 0, banked: null, won: false,   // step 5d: the run played, echo still rising, banked
+      run: lb.run === 'infusion' || lb.run === 'rot' ? lb.run : 'bare', echoDue: 0, banked: null, won: false,   // step 5d: the run played, echo still rising, banked (design system 23: or The Endless Rot)
       took: { scroll: false, sword: false }, usedSave: false, t0: 0, ret: null,
       slots: LIVES };                                // part G: the lives row's lanterns, the most lives held this run (3 to 5)
     if (t.lives) { g.lives = Math.max(1, Math.min(LIVES_MAX, +t.lives || LIVES)); g.slots = Math.max(LIVES, g.lives); }   // Testing: lives at the start   // part C: Night's path loot taken, the saved run used, time played before a continue
     // step 5e-1: what the run takes: The Bare Reckoning one potion socket of each, The Echo Infusion every socket bought; both the chosen
     // spell (its scrolls teach it from step 5e-2; until then the fireball's) and the belt worn
     const rec = lb.progress;
-    g.potCap = g.run === 'infusion' ? { health: rec.sockets.health, mana: rec.sockets.mana } : { health: 1, mana: 1 };
+    g.potCap = g.run !== 'bare' ? { health: rec.sockets.health, mana: rec.sockets.mana } : { health: 1, mana: 1 };   // The Endless Rot: everything bought, as The Echo Infusion
     g.attack = ['fire', 'bolt', 'acid'].indexOf(t.spell) >= 0 ? t.spell : rec.spell;   // Testing can try any (step 5e-2)
     g.spells = { heal: t.all ? 3 : 0 }; g.spells[g.attack] = t.all ? 3 : 0; g.spellList = t.all ? ['heal', g.attack] : [];
     g.zaps = []; g.sprays = []; g.patches = [];   // step 5e-2: the bolts, the sprays and the patches on the ground
@@ -9885,8 +10347,10 @@ LanternBox.game({
     G = g;
     const sv = RESUME; RESUME = null;
     if (wantCheck(lb)) return startCheck(g, lb);   // step 5f-1: the play check, in place of a run
-    if (sv) return resumeRun(g, lb, sv);           // part C: Return to the lantern
-    runBegin(g, lb);                               // the Night pass, part D: the playtest's run log (the play check is no run)
+    if (!wantCheck(lb)) rec.lastRun = g.run;   // design system 23: the run last played (saved with the run as it begins)
+    if (sv) return sv.run === 'rot' ? resumeRot(g, lb, sv) : resumeRun(g, lb, sv);   // part C: Return to the lantern (step 5: or to the wave)
+    if (g.run === 'rot') { startRot(g, lb, t); runBegin(g, lb); return g; }   // design system 23: The Endless Rot, in its arenas (its run logged on the test link)
+    runBegin(g, lb);                              // the Night pass, part D: the playtest's run log (the play check is no run)
     loadPlace(g, lb, g.p, { start: 0, half: 1, boss: 2 }[t.where] || 0);
     lb.hud.health(1); lb.hud.mana(1); lb.hud.armour(g.armour); lb.hud.lives(g.lives, { slots: g.slots }); hudSpells(g, lb); lb.hud.potCap(g.potCap.health, g.potCap.mana); lb.hud.potions(0, 0);
     lb.fade(1);   // black until the first place card lifts
@@ -9925,8 +10389,10 @@ function playUpdate(g, lb) {
   g.drinkT += dt; fillsUpdate(g, lb, dt);
   if (g.mode !== 'lost' && g.mode !== 'return' && g.mana < 1) { g.mana = Math.min(1, g.mana + MANA_RATE * (g.graces.deep ? GRACE.deep : 1) * dt); hudMana(g, lb, false); }
   if (!(g.boss && g.boss.st === 'arrive')) moveUpdate(g, lb, dt);   // play stops while the boss comes in
+  if (g.run === 'rot') holdArena(g);   // design system 23: held between an arena's ends, as in a boss's arena
   bossUpdate(g, lb, dt);
   monstersUpdate(g, lb, dt);
+  if (g.run === 'rot') rotUpdate(g, lb, dt);   // design system 23: the waves (step 2)
   spitUpdate(g, lb, dt);   // step 5e-8: the gobs in flight and their splashes
   if (g.teach && !g.taught.roll && g.mons.some((m) => alive(m) && m.atk && Math.abs(m.px - g.x) < ROLL_TEACH)) teachOnce(g, lb, 'roll');   // step 5e-4: roll, the first time a monster comes at him
   shotsUpdate(g, lb, dt);
@@ -9937,12 +10403,13 @@ function playUpdate(g, lb) {
 // a frame of the World; t, its time, left out for the kit's own (step 5f-1: the play check draws frames on from it)
 function playDraw(ctx, g, lb, t) {
   const w = lb.world, L = g.L, camX = camAt(g, lb);
-  w.begin(ctx, { level: L, camX, t });
+  w.begin(ctx, { level: L, camX, t, rise: g.run === 'rot' ? L.rise(g.x) : undefined });   // design system 23: in an arena the camera rises with the ground where he is, as play.js's loopArena, even held at an end
   g.cps.forEach((cp, k) => { g.glass[k] = w.checkpoint(cp.x, { lit: cp.lit === true ? true : cp.lit != null ? lb.time - cp.lit : undefined, from: g.lantern || undefined }); });
   drawLoot(g, lb, w, camX);
   drawPatches(g, lb, w);   // step 5e-2: the acid's patches, on the ground under everything
   drawSpitGround(g, lb, w);   // step 5e-8: where each gob will land, and its splash
   drawBoss(g, lb, w);
+  if (g.warns) drawWarns(g, w);        // step 3b: The Endless Rot's warnings, under the monsters and him
   drawMonsters(g, lb, w, camX, false);
   const r = drawWanderer(g, lb, w);
   if (r && r.lantern) { g.lantern = r.lantern; g.chest = r.chest; g.hand = r.hand; }
@@ -10030,10 +10497,12 @@ function enterPlace(g, lb) {         // once the place card's black is down: the
   runSave(g, lb, { fresh: true });     // part C: the run saved as each place begins, as its first lantern
 }
 function leavePlace(g, lb) {         // walking on out of the boss's arena: the next place's card, or after the Mist the win
-  if (g.x < g.L.length + 30 || g.out) return;
+  if (g.run === 'rot' || g.x < g.L.length + 30 || g.out) return;   // design system 23: an arena is never walked out of
   if (g.p === PLACES.length - 1) {   // the win (step 5e-5): after the first loop it offers the second, and Finish banks the run; after the second, banked now
     g.mode = 'over'; g.won = true;
     const o = { scored: g.run === 'bare', shrine: { bank: lb.progress.echo } };
+    if (g.run === 'infusion') lb.bests.offer('infusion', Math.round(lb.wisps + g.echoDue + g.lives * LIFE_BONUS * hard(g, 'echo')), 'echo');   // design system 23: its best kept, as the win's total, unshown
+    const news = rotNews(g, lb); if (news) o.news = news;   // design system 23 (NewRun): the news before the win
     if (g.loop === 1) {              // the Night pass, part D: the run log notes the first loop's win, and Finish as the run's end
       runWon(g, lb);
       Object.assign(o, { offer: true, again: () => startLoop(g, lb), finish: () => { const b = bankRun(g, lb, true); runEnded(g, lb, 'finish'); return b; }, stolen: wouldSteal(g, lb) });
@@ -10068,6 +10537,337 @@ function checkpoints(g, lb) {        // a checkpoint lights as he passes it, and
 }
 
 /* ---------- the ground, the banks and the pieces ---------- */
+/* ---------- The Endless Rot (design system 23; HANDOVER-design-23.md Part 3, step 1: the arenas) ----------
+   He holds four small arenas in turn, one for each place in the story's order (the kit's lb.world.arena: slopes only, 1,800 long, no pits,
+   banks or pieces; scenery drawn only), held between their ends as in a boss's arena. Until its way in is built (step 6), Testing's The
+   Endless Rot starts it, in Start at's arena. What he starts with (Barney): the base sword, heal and the chosen attack spell, active from the
+   first wave, and everything bought (the sockets, the spell, the belt). Step 1 has no waves yet: no monsters, no loot, no saving. */
+const ARENA_HOLD = 30;               // he is held this far inside each end, as a boss's arena holds him 30 from its end (starting figure)
+function startRot(g, lb, t) {
+  Object.assign(g, { teach: false, loop: 1, orders: null });
+  g.spells = { heal: t.all ? 3 : 1 }; g.spells[g.attack] = t.all ? 3 : 1; g.spellList = ['heal', g.attack];
+  loadArena(g, lb, Math.max(0, PLACES.indexOf(t.place || 'night')));
+  lb.hud.health(1); lb.hud.mana(1); lb.hud.armour(g.armour); lb.hud.lives(g.lives, { slots: g.slots }); hudSpells(g, lb); lb.hud.potCap(g.potCap.health, g.potCap.mana); lb.hud.potions(0, 0);
+  // the run's first card, as the journey's (Barney, 14 November 2026: the handover's reading 6): the arena's place with its waves in brass
+  // under the name, "Waves 1 to 3" for Night's
+  lb.fade(1);
+  const first = 3 * g.arena + 1 + (t.loop === '2' ? 12 : 0);   // the first wave; Testing's Loop: the second starts the arenas' second time round (step 4)
+  g.felled = 0; g.wave = null; g.rotN = 0; lb.hud.counter('Felled', 0);   // step 2: the counter reads FELLED, the monsters felled this run
+  lb.placeCard(PLACES[g.p], () => { lb.fade(0); enterArena(g, lb); }, () => { g.mode = 'ground'; rotSave(g, lb, first); startWave(g, lb, first, false); }, { again: wavesLine(first) });
+  return g;
+}
+/* Step 2: the waves (the gameplay note's table; all starting figures). Each wave sends its monsters in one at a time, never more than its
+   "most on screen" alive at once and never two closer together than its gap; ground monsters walk in from beyond either end and flyers
+   come in over either end, then come for him as on the journey. The boss's bar is the wave's ("Wave 4", emptying as its monsters fall);
+   each felled monster's wisp rises to the counter with its echo sound, as loud as that monster's on the journey (the handover's reading 10),
+   and the counter steps up as it arrives. When the last falls: the bar goes, "Wave 4 endured · 7 echo" (wave n pays n + 3, kept out of
+   sight with the run's echo), health refills (ROT_RAMP: half of what is missing, and no mana since tuning 3), and after a short pause "Wave 5" and the next wave, as play.js's loopWave times
+   them. After a card the card is the wave's announcement, so its first wave has no line. Waves 1 to 3 bring crawlers and flyers; the others
+   join in step 3 (ROT_KINDS), with the card and a new arena after every third wave (arenaCard). Rising through a warning waits on a kit
+   job (a warning drawn on its own, and a deeper rise of 0.6 s). */
+const ROT_WAVES = [[6, 2, 3.0], [8, 2, 3.0], [10, 3, 3.0], [8, 3, 3.0], [10, 3, 2.5], [12, 4, 2.5], [10, 4, 2.5], [12, 4, 2.0],
+  [14, 5, 2.0], [12, 5, 2.0], [14, 5, 1.7], [16, 6, 1.7]];   // waves 1 to 12: [monsters, most on screen, seconds between arrivals]
+const ROT = { first: 1.0, barOut: 0.6, endLine: 1.0, refillAt: 0.5, refillT: 0.5, next: 2.3, out: 60, inside: 40, flyer: 1 / 3 };
+// first: the first arrival after a wave begins; barOut: the bar goes after the last falls (play.js: 0.6 s); endLine: its line, once the
+// last wisp has reached the counter (0.9 s); refill: health (and mana, by ROT_RAMP's shares) from 0.5 s after the end line, over 0.5 s (play.js); next: the next
+// wave's line after the end line (play.js: 2.3 s); out: how far beyond an end a monster starts; inside: how far in it walks before it
+// comes for him; flyer: the share of arrivals that fly (starting figure, about Night's own mix)
+// Barney, 14 November 2026 (his first run reached wave 21, where the mode means a player who beats The Veiled Ghost to reach wave 6 to
+// 9): a ramp every wave in place of the step at wave 13 (hits 1.5, speed 1.2), starting figures: the monsters 3% faster a wave, moving
+// and attacking (their wind-ups and the wait between attacks), up to 1.6 times; 5% more damage and 5% more health a wave, without end;
+// between waves health refills half of what is missing, mana in full. tune: the figures' number, kept with each run in the run log.
+// Tuning 3 (Barney, 14 November 2026, after his second run reached wave 18: "I was able to spam the heal spell almost every time and
+// didn't have to use potions at all"): no mana between waves (manaBack 0), so it comes back only as on the journey, 1% a second, from
+// mana potions and from Mana Thief; health still half of what is missing. The ramp as tuning 2, to be decided after this is played.
+// Tuning 4 (Barney, 14 November 2026, after run 11 reached wave 15: "heal still overpowered"): the heal costs half the mana bar here
+// (healCost; the journey's 30%), about two heals a minute where the regen and the mode's steady mana potions gave about three and a half
+// Tuning 5 (Barney, 14 November 2026, after runs 16 to 19 reached waves 8, 5, 6 and 17: "the walker doesn't seem to do much damage in
+// the later levels considering he is toughest and biggest monster"; "Fix slope and heavier blow"): the walker's blow and touch here
+// 35% of health before the ramp (walker; its own 25%, the journey's), so from wave 13 one blow takes over half; the ramp as tuning 4
+const ROT_RAMP = { speed: 0.03, speedMax: 1.6, dmg: 0.05, hits: 0.05, healBack: 0.5, manaBack: 0, healCost: 0.5, walker: 0.35, tune: 5 };
+function rotRamp(g, k) {               // hard()'s figures in the mode, by the wave: speed, hits (health) and dmg; never echo or a boss's
+  const w = (g.wave ? g.wave.n : 1) - 1;
+  if (k === 'speed') return Math.min(ROT_RAMP.speedMax, 1 + ROT_RAMP.speed * w);
+  if (k === 'hits') return 1 + ROT_RAMP.hits * w;
+  if (k === 'dmg') return 1 + ROT_RAMP.dmg * w;
+  return 1;
+}
+const monDmg = (g) => (g.run === 'rot' ? rotRamp(g, 'dmg') : 1);     // a monster's blow, the mode's ramp on it (the journey's as it was)
+const monBlow = (g, kind) => (g.run === 'rot' && kind === 'walker' ? ROT_RAMP.walker : MON[kind].dmg) * monDmg(g);   // tuning 5: the mode's walker heavier
+const atkPace = (g) => (g.run === 'rot' ? rotRamp(g, 'speed') : 1);  // its attacks' clock and the wait between them
+// step 4: from wave 13 the size restarts at 12 and climbs by 2 a wave, and the most on screen goes on rising as it did, one more every
+// third wave (2 + n / 3: 6, 6, 7, 7, 7, 8), to 8 and no more; the gap stays wave 12's (starting figures: the note says only "rises to 8")
+function waveSpec(n) {
+  if (n <= ROT_WAVES.length) { const r = ROT_WAVES[n - 1]; return { size: r[0], most: r[1], gap: r[2] }; }
+  return { size: 12 + 2 * (n - 13), most: Math.min(8, 2 + Math.floor(n / 3)), gap: ROT_WAVES[ROT_WAVES.length - 1][2] };
+}
+const wavesLine = (first) => arenaWaves(first) + (first >= 13 ? ' · Again, harder' : '');   // step 4: "Waves 13 to 15 · Again, harder" (PlaceCard)
+function startWave(g, lb, n, line) {
+  const s = waveSpec(n);
+  g.loop = n >= 13 ? 2 : 1;            // step 4: from wave 13 the second loop's toughness, hits x1.5 and speed x1.2 (hard; never its echo: a wave pays n + 3)
+  g.wave = { n, size: s.size, most: s.most, gap: s.gap, sent: 0, felled: 0, t: 0, nextIn: ROT.first, done: false, dt: 0 };
+  g.mons = g.mons.filter((m) => m.st !== 'gone');
+  lb.hud.boss({ name: 'Wave ' + n, hp: 1, full: true });
+  if (line) lb.hud.line(null, 'Wave ' + n);
+  const L = runNote(g, lb);             // the run log (the test link's and the playtest's): when each wave began
+  if (L && !L.end && L.wt && L.wt[n] == null) { L.wt[n] = L.t; runsSave(lb); }   // the first time it was reached (a continue begins it again)
+}
+function rotUpdate(g, lb, dt) {
+  const W = g.wave;
+  if (g.warns) warnsUpdate(g, dt);     // step 3b
+  if (W) {
+    W.t += dt;
+    if (!W.done) {
+      const out = g.mons.reduce((k, m) => k + (alive(m) ? 1 : 0), 0);
+      if (W.sent < W.size && out < W.most && W.t >= W.nextIn) { sendMonster(g, lb); W.sent++; W.nextIn = W.t + W.gap; }
+    } else {
+      W.dt += dt;
+      if (!W.barGone && W.dt >= ROT.barOut) { W.barGone = true; lb.hud.boss(null); }
+      if (!W.paid && W.dt >= ROT.endLine) {
+        W.paid = true;
+        const pay = W.n + 3 + (g.spareDue || 0); g.spareDue = 0;   // step 5: and 2 for each spare armour picked up meanwhile
+        lb.addWisps(pay);
+        rotSaveNow(g, lb);              // step 5: how far the run has got, for a page closed after a continue
+        lb.hud.line(null, 'Wave ' + W.n + ' endured · ' + pay + ' echo');
+        g.refill = { t: 0, h: g.health, m: g.mana };
+      }
+      if (W.dt >= ROT.endLine + ROT.next) { if (W.n % 3 === 0) arenaCard(g, lb, W.n); else startWave(g, lb, W.n + 1, true); }   // step 3: after every third wave, the card in the next wave's line's place
+    }
+  }
+  const R = g.refill;
+  if (R && g.mode !== 'lost' && g.mode !== 'return') {
+    R.t += dt;
+    const u = ease3(Math.max(0, Math.min(1, (R.t - ROT.refillAt) / ROT.refillT)));
+    // Barney, 14 November 2026: health back by half of what is missing (ROT_RAMP.healBack); mana by its share (manaBack), none since
+    // tuning 3, and then left alone (a spell cast during the refill is not given back)
+    if (u > 0) {
+      g.health = Math.max(g.health, R.h + (1 - R.h) * ROT_RAMP.healBack * u); lb.hud.health(g.health);
+      if (ROT_RAMP.manaBack > 0) { g.mana = Math.max(g.mana, R.m + (1 - R.m) * ROT_RAMP.manaBack * u); hudMana(g, lb, true); }
+    }
+    if (u >= 1) g.refill = null;
+  }
+}
+// step 3: who comes. Crawlers and flyers from wave 1, mouth-hats from wave 4, ghouls from 7, walkers from 10 (Monsters, version 23); each
+// arrival drawn by these weights (starting figures): a crawler twice as often as any other, a flyer still one arrival in three until the
+// mouth-hats join
+const ROT_KINDS = [[1, { crawler: 2, bat2: 1 }], [4, { crawler: 2, bat2: 1, hatmaw: 1 }], [7, { crawler: 2, bat2: 1, hatmaw: 1, ghoul2: 1 }],
+  [10, { crawler: 2, bat2: 1, hatmaw: 1, ghoul2: 1, walker: 1 }]];
+function arrivalKind(g, lb) {
+  const n = g.wave ? g.wave.n : 1, w = ROT_KINDS.filter((r) => n >= r[0]).pop()[1], ks = Object.keys(w), all = ks.reduce((s, k) => s + w[k], 0);
+  let r = lb.rand() * all;
+  for (const k of ks) { r -= w[k]; if (r < 0) return k; }
+  return ks[0];
+}
+/* Step 3b (kit 0.32.0; design system version 23, Monsters, play.js's loopWave): rising through a warning. From wave 4 some crawlers and
+   ghouls rise inside the arena through a cracked ember warning, as the skull's crawlers do: the warning for 0.9 s (faded in over 0.15 s),
+   then the rise in 0.6 s, each from its own height below (the kit's), the warning fading over the rise and 0.3 s more. A rising monster
+   can neither hurt nor be hurt, nor move, until it is up, and it counts as on screen from its warning. A rising spot is at least 220 from
+   him and 120 from any other warning, and 40 inside the arena's ends; with none in 12 tries it walks in. One arrival in four rises from
+   wave 4, one in three from wave 7, of all arrivals (Barney, 14 November 2026, the handover's reading 14): the kinds come as before, and a
+   crawler or ghoul rises often enough to make that share (from wave 4 one crawler in two; from wave 7 five in nine; from wave 10 two in
+   three). Mouth-hats, walkers and flyers always come in over the ends. No sound of its own (the design names none). */
+const ROT_RISE = { from: 4, share: 1 / 4, from2: 7, share2: 1 / 3, warn: 0.9, len: 0.6, fadeIn: 0.15, fadeOut: 0.3, him: 220, apart: 120, inset: 40, tries: 12,
+  kinds: { crawler: true, ghoul2: true } };
+const unborn = (m) => m.riseW != null || (m.riseLen != null && m.riseT < m.riseLen);   // step 3b: a riser still in its warning or rising
+function riseChance(g) {               // the chance that a crawler or ghoul arriving now rises, so rising is the share of all arrivals
+  const n = g.wave ? g.wave.n : 1;
+  if (n < ROT_RISE.from) return 0;
+  const w = ROT_KINDS.filter((r) => n >= r[0]).pop()[1], ks = Object.keys(w);
+  const all = ks.reduce((s, k) => s + w[k], 0), can = ks.reduce((s, k) => s + (ROT_RISE.kinds[k] ? w[k] : 0), 0);
+  return Math.min(1, (n >= ROT_RISE.from2 ? ROT_RISE.share2 : ROT_RISE.share) * all / can);
+}
+function riseSpot(g, lb, kind) {       // where it may rise, or null
+  const K = MON[kind], half = Math.max(-K.box[0], K.box[1]) + 2, a = half + ROT_RISE.inset, b = g.L.length - half - ROT_RISE.inset;
+  for (let i = 0; i < ROT_RISE.tries; i++) {
+    const x = a + lb.rand() * (b - a);
+    if (Math.abs(x - g.x) >= ROT_RISE.him && !g.warns.some((q) => Math.abs(q.x - x) < ROT_RISE.apart)) return x;
+  }
+  return null;
+}
+function sendRiser(g, lb, kind, x) {   // up through a warning at x, facing him
+  const K = MON[kind], half = Math.max(-K.box[0], K.box[1]) + 2, n = 1000 + (++g.rotN);
+  const m = { id: 'r' + n, kind, sx: x, sy: 0, alt: 0, patch: [half + 2, g.L.length - half - 2], ph: (n * 0.37) % 1, seed: n * 7 + 3, arena: true, entry: null };
+  resetMonster(g, m); m.awake = true; m.f = g.x >= x ? 1 : -1; m.cd = Math.max(m.cd, 0.3);
+  m.riseW = 0; m.riseLen = ROT_RISE.len;
+  g.mons.push(m); g.warns.push({ x, t: 0 });
+}
+function warnsUpdate(g, dt) {          // the warnings' own clocks, each gone once faded
+  const end = ROT_RISE.warn + ROT_RISE.len + ROT_RISE.fadeOut;
+  for (const q of g.warns) q.t += dt;
+  if (g.warns.some((q) => q.t >= end)) g.warns = g.warns.filter((q) => q.t < end);
+}
+function drawWarns(g, w) {             // under the monsters and him, as loopWave draws it
+  for (const q of g.warns) {
+    const t = q.t, R = ROT_RISE, a = t < R.fadeIn ? t / R.fadeIn : t < R.warn ? 1 : Math.max(0, 1 - (t - R.warn) / (R.len + R.fadeOut));
+    w.warning(q.x, { a });
+  }
+}
+// step 3: the card between arenas, after every third wave, in the next wave's line's place (PlaceCard, GracePick, version 23): the next
+// arena's place with its waves in brass; after waves 3, 9, 15... a Grace (the card holds with the pick, as on the journey; when the deck
+// is spent it offers nothing and runs on), after waves 6, 12, 18... a life: the lantern and "Another chance is claimed" in gold, the card
+// not holding, and the new lantern lighting as play returns, with the checkpoint lantern's spark-and-chime, as the journey's life for a
+// boss does; at five lives "10 echo" in its place with the echo's sound (LIFE_ECHO, the mode's only echo off a wave's end line). The
+// arena changes under the black, he stands in its middle, and the next wave begins as the card goes, with no line of its own.
+function arenaCard(g, lb, n) {
+  const k = n / 3, next = k % PLACES.length, grace = k % 2 === 1, five = !grace && g.lives >= LIVES_MAX;
+  g.mode = 'card';
+  const o = { again: wavesLine(n + 1) };   // the waves ahead, counting on ("Waves 13 to 15 · Again, harder" after wave 12)
+  if (grace) {
+    const offer = drawGraces(g, lb);
+    if (offer.length) o.pick = { heading: 'Bind a twisted Grace', options: offer.map((x) => ({ id: x.id, name: x.name, line: x.line, pic: x.pic, tier: x.tier })), take: (id) => takeGrace(g, lb, id) };
+  } else {
+    o.life = five ? { text: LIFE_ECHO + ' echo', lantern: false } : true;
+    if (five) lb.after(0.9, () => { if (g.banked || G !== g) return; lb.addWisps(LIFE_ECHO); lb.sfx('echo', LIFE_ECHO); });   // as the card is up
+  }
+  lb.placeCard(PLACES[next], () => { lb.fade(0); loadArena(g, lb, next); enterArena(g, lb); }, () => {
+    g.mode = 'ground'; g.mt = 0;
+    const L = runNote(g, lb);           // the run log: the Grace bound and the life lit (or its 10 echo), after which wave
+    if (L && !L.end && L.graces) { if (g.justBound) L.graces.push({ id: g.justBound, wave: n }); if (!grace) L.gained.push({ wave: n, five }); runsSave(lb); }
+    if (g.justBound) { lb.hud.line(gracePic(g.justBound), graceOf(g.justBound).name + ' bound'); g.justBound = null; }
+    if (!grace && !five) { g.lives = Math.min(LIVES_MAX, g.lives + 1); g.slots = Math.max(g.slots, g.lives); lb.hud.lives(g.lives, { slots: g.slots, gain: true }); lb.sfx('checkpoint'); }
+    rotSave(g, lb, n + 1);              // step 5: the run saved at the change of arena, its Grace bound or its life lit
+    startWave(g, lb, n + 1, false);
+  }, o);
+}
+/* ---------- step 5: The Endless Rot's saved run (Relight, TitleArch, version 23; the handover's reading 11: its details mirror the
+   journey's saved run, as starting rules for Barney to confirm) ----------
+   Saved as the run begins and at each change of arena, once the card's Grace is bound or its life is lit, so coming back can never draw
+   the Graces again. It holds the wave to come back to, the lives, the armour, the sword's and spells' levels, the potions kept, the Graces,
+   the monsters felled and the run's echo; not the monsters, nor the loot on the ground. As on the journey a lost life is written into it
+   at once, so closing the page never gives one back. It also keeps how far the run has got since (now: felled, echo and the wave, at each
+   wave's end), for a page closed after a continue: then the run ends, its echo so far is banked and its felled count stands for the
+   personal best. One continue for each save. */
+const ROT_NAME = 'The Endless Rot';
+const arenaOfWave = (n) => Math.floor((n - 1) / 3) % PLACES.length;
+function rotSave(g, lb, wave) {
+  if (g.banked || !lb.progress) return;
+  const echo = Math.max(0, Math.round(lb.wisps + g.echoDue));
+  lb.progress.saved = { v: RUN_V, used: false, run: 'rot', wave, lives: Math.max(0, g.lives), slots: g.slots, armour: g.armour,
+    sword: { reach: g.sword.reach, bite: g.sword.bite }, attack: g.attack, spells: { heal: g.spells.heal, atk: g.spells[g.attack] },
+    list: g.spellList.slice(), sel: g.sel, pots: { health: g.pots.health, mana: g.pots.mana }, cap: { health: g.potCap.health, mana: g.potCap.mana },
+    graces: g.bound.slice(), grave: !!g.graveSpent, felled: g.felled, echo, t: Math.round(lb.time + (g.t0 || 0)), n: g.log ? g.log.n : 0,
+    now: { felled: g.felled, echo, wave } };
+  g.usedSave = false;
+  lb.saveProgress();
+}
+function rotSaved(g, lb) { const sv = lb.progress && lb.progress.saved; return !g.banked && sv && sv.run === 'rot' ? sv : null; }
+function rotSaveNow(g, lb) {           // how far the run has got: at each wave's end
+  const sv = rotSaved(g, lb); if (!sv) return;
+  sv.now = { felled: g.felled + (g.felledDue || 0), echo: Math.max(0, Math.round(lb.wisps + g.echoDue)), wave: g.wave ? g.wave.n : sv.wave };
+  lb.saveProgress();
+}
+function rotSaveLives(g, lb) {         // a lost life, written at once
+  const sv = rotSaved(g, lb); if (!sv) return;
+  sv.lives = Math.max(0, g.lives);
+  lb.saveProgress();
+}
+function readRotSaved(o) {             // a saved Endless Rot run read back, every value checked, or null
+  const obj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const int = (v, a, b) => Number.isInteger(v) && v >= a && v <= b;
+  const ids = (v, ok) => Array.isArray(v) && v.every((x) => typeof x === 'string' && ok(x)) && new Set(v).size === v.length;
+  if (!int(o.wave, 1, 1e6) || !int(o.lives, 0, SAVED_LIVES) || !int(o.slots, LIVES, LIVES_MAX) || !int(o.armour, 0, 3)) return null;
+  if (!obj(o.sword) || !int(o.sword.reach, 0, 2) || !int(o.sword.bite, 0, 2)) return null;
+  if (['fire', 'bolt', 'acid'].indexOf(o.attack) < 0 || !obj(o.spells) || !int(o.spells.heal, 0, 3) || !int(o.spells.atk, 0, 3)) return null;
+  if (!ids(o.list, (k) => k === 'heal' || k === o.attack) || (o.list.indexOf('heal') >= 0) !== (o.spells.heal > 0) || (o.list.indexOf(o.attack) >= 0) !== (o.spells.atk > 0)) return null;
+  if (!int(o.sel, 0, Math.max(0, o.list.length - 1))) return null;
+  if (!obj(o.cap) || !int(o.cap.health, 1, 3) || !int(o.cap.mana, 1, 3) || !obj(o.pots) || !int(o.pots.health, 0, o.cap.health) || !int(o.pots.mana, 0, o.cap.mana)) return null;
+  if (!ids(o.graces, (k) => !!graceOf(k)) || !int(o.felled, 0, 1e9) || !int(o.echo, 0, 1e9) || !int(o.t, 0, 1e7)) return null;
+  const nw = obj(o.now) && int(o.now.felled, o.felled, 1e9) && int(o.now.echo, 0, 1e9) && int(o.now.wave, o.wave, 1e6) ? o.now : { felled: o.felled, echo: o.echo, wave: o.wave };
+  return { v: RUN_V, used: o.used === true, run: 'rot', wave: o.wave, lives: o.lives, slots: o.slots, armour: o.armour,
+    sword: { reach: o.sword.reach, bite: o.sword.bite }, attack: o.attack, spells: { heal: o.spells.heal, atk: o.spells.atk },
+    list: o.list.slice(), sel: o.sel, pots: { health: o.pots.health, mana: o.pots.mana }, cap: { health: o.cap.health, mana: o.cap.mana },
+    graces: o.graces.slice(), grave: o.grave === true, felled: o.felled, echo: o.echo, t: o.t, n: Number.isInteger(o.n) && o.n > 0 ? o.n : 0,
+    now: { felled: nw.felled, echo: nw.echo, wave: nw.wave } };
+}
+// Return to the wave (Relight, version 23): the run as it was saved; the arena fades up, he forms in its middle (as at a lantern), health
+// and mana full as between waves, then the wave's line and the wave. No place card. Testing's own switches are as now.
+function resumeRot(g, lb, sv) {
+  Object.assign(g, { lives: sv.lives, slots: Math.max(sv.slots, Math.min(LIVES_MAX, sv.lives)), armour: sv.armour, sword: { reach: sv.sword.reach, bite: sv.sword.bite },
+    attack: sv.attack, sel: sv.sel, pots: { health: sv.pots.health, mana: sv.pots.mana }, potCap: { health: sv.cap.health, mana: sv.cap.mana },
+    graveSpent: sv.grave, teach: false, orders: null, t0: sv.t, usedSave: true });
+  g.spells = { heal: sv.spells.heal }; g.spells[g.attack] = sv.spells.atk; g.spellList = sv.list.slice();
+  g.graces = {}; g.bound = []; sv.graces.forEach((id) => { g.graces[id] = true; g.bound.push(id); }); heldToKit(g, lb);
+  sv.used = true; lb.progress.saved = sv;   // one continue for each save
+  const L = RUN_LOG && sv.n > 0 && lb.progress.runLog ? lb.progress.runLog.runs.find((r) => r.n === sv.n && !r.end) : null;   // the run log's own line carries on
+  if (L) { g.log = L; runLb = lb; g.t0 = Math.max(g.t0, typeof L.t === 'number' && isFinite(L.t) ? Math.round(L.t) : 0); }
+  lb.saveProgress();
+  g.felled = sv.felled; g.felledDue = 0; g.wave = null; g.rotN = 0; g.spareDue = 0;
+  lb.hud.counter('Felled', g.felled);
+  loadArena(g, lb, arenaOfWave(sv.wave)); enterArena(g, lb);
+  g.loop = sv.wave >= 13 ? 2 : 1;
+  lb.addWisps(sv.echo);
+  lb.hud.health(0); lb.hud.mana(0); lb.hud.armour(g.armour); lb.hud.lives(g.lives, { slots: g.slots }); hudSpells(g, lb); lb.hud.potCap(g.potCap.health, g.potCap.mana); lb.hud.potions(g.pots.health, g.pots.mana);
+  lb.fade(1);
+  g.mode = 'return'; g.mt = 0; g.safeT = 0; g.hurtT = 9; g.ret = null; g.fadeUp = true; g.resumeWave = sv.wave;
+  return g;
+}
+// step 3 (Loot, version 23): the last monster of every third wave surely drops a sword upgrade or a spell scroll, as a boss does (the same
+// choice: heal and the attack spell to level 3, the sword's reach and bite to 2), where it fell; with everything at its top a health potion
+function sureDrop(g, lb, m) {
+  const atk = g.attack, can = [];
+  if (g.spells.heal < 3) can.push('heal'); if (g.spells[atk] < 3) can.push(atk); if (g.sword.reach < 2) can.push('reach'); if (g.sword.bite < 2) can.push('rune');
+  const kind = can.length ? lb.pick(can) : 'health', x = m.px;
+  g.loot.push({ kind, x, y: surfaceAt(g, x), drop: 0, from: { x: m.px, y: m.py + (MON[m.kind].ground ? -30 : 0) }, seed: g.loot.length + 1 });
+}
+function sendMonster(g, lb) {          // in from beyond an end, either end at random (step 3b: or up through a warning)
+  const kind = arrivalKind(g, lb), up = ROT_RISE.kinds[kind] ? riseChance(g) : 0;
+  if (up > 0 && lb.rand() < up) { const x = riseSpot(g, lb, kind); if (x != null) return sendRiser(g, lb, kind, x); }
+  const K = MON[kind], half = Math.max(-K.box[0], K.box[1]) + 2, side = lb.rand() < 0.5 ? -1 : 1, len = g.L.length;
+  const x = side < 0 ? -ROT.out - half : len + ROT.out + half, n = 1000 + (++g.rotN), alt = K.ground ? 0 : (n % 2) * 22;
+  const m = { id: 'r' + n, kind, sx: x, sy: K.ground ? 0 : g.L.ground(x) - K.hover - alt, alt, patch: K.ground ? [x - 1, x + 1] : null, ph: (n * 0.37) % 1, seed: n * 7 + 3,
+    arena: true, entry: side < 0 ? half + ROT.inside : len - half - ROT.inside };
+  resetMonster(g, m); m.awake = true; m.f = -side;
+  if (K.ground) m.patch = [Math.min(x, m.entry) - 1, Math.max(x, m.entry) + 1];   // its way in; once in, the arena between the ends
+  g.mons.push(m);
+}
+function enterStep(m, g, lb, dt) {     // walking or flying in to its entry point, in its own gait, before it comes for him (it can't attack yet)
+  const K = MON[m.kind], dir = m.entry >= m.bx ? 1 : -1;
+  m.f = dir; m.walkT += dt;
+  let v = K.speed;
+  if (m.kind === 'crawler') v = m.walkT % 0.7 < 0.35 ? K.speed : 0;
+  else if (m.kind === 'hatmaw') v = Math.sin(m.walkT * 5.72) > 0 ? K.speed : 0;
+  else if (m.kind === 'ghoul2') v = K.speed * Math.max(0, Math.sin(m.walkT * 4.5)) ** 2;
+  v *= hard(g, 'speed');
+  m.bx += dir * Math.min(v * dt, Math.abs(m.entry - m.bx));
+  if (!K.ground) m.by += Math.max(-40 * dt, Math.min(40 * dt, g.L.ground(m.bx) - K.hover - m.alt - m.by));
+  place(m, g, m.bx, 0);
+  if (Math.abs(m.entry - m.bx) < 0.5) {
+    m.entry = null; m.cd = Math.max(m.cd, 0.3);
+    if (K.ground) { const half = Math.max(-K.box[0], K.box[1]) + 2; m.patch = [half + 2, g.L.length - half - 2]; }
+  }
+}
+function rotFelled(g, lb, m) {         // a felled monster: its wisp's echo sound (as loud as on the journey), the bar at once, the counter as the wisp arrives
+  lb.sfx('defeat', MON[m.kind].wisps);
+  g.felledDue = (g.felledDue || 0) + 1;
+  lb.after(0.9, () => { if (g.banked || G !== g) return; g.felledDue--; g.felled++; lb.hud.counter('Felled', g.felled); });
+  const W = g.wave;
+  if (!W || W.done) return;
+  W.felled++;
+  lb.hud.boss({ name: 'Wave ' + W.n, hp: (W.size - W.felled) / W.size, full: true });
+  if (W.felled >= W.size) { W.done = true; W.dt = 0; return W.n % 3 === 0; }   // step 3: the last of every third wave makes the sure drop
+  return false;
+}
+const arenaWaves = (first) => 'Waves ' + first + ' to ' + (first + 2);   // the waves an arena holds, from its first (PlaceCard, version 23); from wave 13 "· Again, harder" comes after (step 4)
+function loadArena(g, lb, a) {       // an arena: a = 0, 1, 2, 3 for the four in turn; he stands in its middle, as the design draws him
+  g.arena = a; g.p = a % PLACES.length;
+  g.L = lb.world.arena(PLACES[g.p]);
+  g.pieces = []; g.cps = []; g.glass = []; g.lastCp = 0; g.walls = [];
+  g.x = g.L.length / 2; g.y = surfaceAt(g, g.x); g.on = null; g.vy = 0; g.facing = 1; g.walkDist = 0;
+  g.mons = []; g.boss = null;
+  g.loot = []; g.shots = []; g.zaps = []; g.sprays = []; g.patches = []; g.gobs = []; g.splats = [];
+  g.warns = [];                      // step 3b: the warnings risers come up through
+}
+function enterArena(g, lb) {         // as enterPlace: Lantern Ward and Iron Skin count an arena as a place; the place's sound and track
+  g.out = false;
+  g.warded = false;
+  if (g.graces.iron) { g.armour = 3; lb.hud.armour(3); }
+  lb.ambient(PLACES[g.p]);
+  lb.music(TRACK[PLACES[g.p]]);
+}
+function holdArena(g) {              // between the ends, as bossUpdate holds him in a boss's arena (its ends are flat, so his feet stay on the ground)
+  const l = ARENA_HOLD, r = g.L.length - ARENA_HOLD;
+  if (g.x < l) g.x = l; if (g.x > r) g.x = r;
+}
 function groundAt(g, x) { return g.L.pit(x) ? Infinity : g.L.ground(x); }
 function pieceUnder(g, x, y) { return g.pieces.find((p) => x >= p.x0 && x <= p.x1 && Math.abs(p.y(x) - y) < 2) || null; }
 function surfaceAt(g, x) {           // where he stands at x: a piece's top or the ground
@@ -10247,11 +11047,13 @@ function lostUpdate(g, lb, dt) {
     P.broke = true;
     lb.sfx('lifeLost');
     if (!g.safe) { g.lives--; lb.hud.lives(g.lives); }
-    runSave(g, lb, { full: true });    // part C: after the life is taken, so closing the page never gives it back (the last one too)
+    runSave(g, lb, { full: true });    // part C: after the life is taken, so closing the page never gives it back
+    if (g.run === 'rot') rotSaveLives(g, lb);   // The Endless Rot's own saved run (step 5), the same (the last one too)
     if (g.lives <= 0) { P.last = true; lb.runEnd(() => runEndInfo(g, lb), 0.8 - 0.34); }   // step 5d: the plaque 0.8 s after the blow
   }
   if (P.last) return;                  // the last life: no fade and no return; the scene holds still under the run's end
   const tOut = 0.34 + 0.8, tBlack = tOut + 0.35, tRet = tBlack + 0.3;
+  if (g.run === 'rot') { if (t >= tRet) rotForm(g, lb); return; }   // The Endless Rot: no fade to black; he forms again where he fell, at the journey's moment
   lb.fade(t < tOut ? 0 : Math.min(1, (t - tOut) / 0.35));
   if (t >= tRet) {                     // back at the last lit checkpoint, forming in its light
     const cp = g.cps[g.lastCp];
@@ -10296,14 +11098,23 @@ function refuseUpdate(g, lb, t, P) {
   }
   if (t >= tForm + REFUSE_RISE) { g.mode = 'ground'; g.mt = 0; g.landT = 9; g.lost = null; }
 }
+// The Endless Rot (step 2; Barney, 14 November 2026): after a lost life he forms again on the spot where he fell, the way he forms at a
+// checkpoint lantern (health and mana filling, as there), with no fade to black and no place card, and a second of safety once he stands;
+// the wave carries on around him, nothing reset and no monster sent back
+function rotForm(g, lb) {
+  g.y = surfaceAt(g, g.x); g.on = null; g.vy = 0;
+  g.mode = 'return'; g.mt = 0; g.safeT = 0; g.hurtT = 9;
+  g.shots = []; g.cast = null; g.castBuf = 0; g.zaps = []; g.sprays = []; g.patches = []; g.strikes = []; g.gobs = []; g.splats = [];
+  lb.hud.health(0); lb.hud.mana(0);
+}
 const FULL = { health: 1, mana: 1 };
 function returnUpdate(g, lb, dt) {
   const t = g.mt;
-  lb.fade(Math.max(0, 1 - t / 0.35));
+  if (g.run !== 'rot' || g.fadeUp) lb.fade(Math.max(0, 1 - t / 0.35));   // The Endless Rot never fades, but for a run continued (step 5)
   const q = Math.round(Math.max(0, Math.min(1, (t - 0.3) / 0.5)) * 8) / 8;   // health and mana fill in steps
   const to = g.ret || FULL;            // part C: a run continued comes back with the health and mana it was saved with
   lb.hud.health(q * to.health); lb.hud.mana(q * to.mana);
-  if (t >= 0.9) { g.mode = 'ground'; g.mt = 0; g.landT = 9; g.health = to.health; g.mana = to.mana; g.manaShown = to.mana; g.ret = null; }
+  if (t >= 0.9) { g.mode = 'ground'; g.mt = 0; g.landT = 9; g.health = to.health; g.mana = to.mana; g.manaShown = to.mana; g.ret = null; if (g.run === 'rot') { g.safeT = safeLen(g); g.fadeUp = false; if (g.resumeWave) { startWave(g, lb, g.resumeWave, true); g.resumeWave = null; } } }   // step 5: a run continued: then the wave's line and the wave   // The Endless Rot: a second of safety as he stands
 }
 
 /* ---------- the sword (4d-2a) ---------- */
@@ -10312,7 +11123,9 @@ function swordUpdate(g, lb, dt, i) {
   const s = g.mt * lb.world.stepRate * swingRate(g);   // step 5e-6b: Quick Hands plays the swing 15% quicker
   if (!g.swHit && s >= 1) { g.swHit = true; swordHits(g, lb); }   // the blow lands on the strike
   if (s >= 2 && i.pressed.jump) return jump(g, lb);                // after the strike, a jump or a roll cuts the follow-through short
-  if (s >= 2 && i.pressed.roll) return startRoll(g, lb);
+  // a roll out of the swing turns him first to the way he is pressing, as a roll from standing does (Barney, 14 November 2026: in The
+  // Endless Rot, rolls from a swing took him away from the crawler behind him)
+  if (s >= 2 && i.pressed.roll) { const d = (i.right ? 1 : 0) - (i.left ? 1 : 0); if (d) g.facing = d; return startRoll(g, lb); }
   if (g.mt >= SWORD_T / swingRate(g)) { g.mode = 'ground'; g.mt = 0; g.landT = 9; }
 }
 // every monster in front of him, from his feet to above his head, as far as the blade reaches; each takes 1, and half more for each
@@ -10322,7 +11135,7 @@ function swordHits(g, lb) {
   const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb), y0 = g.y - 135, y1 = g.y + 4;
   let hits = 0;
   for (const m of g.mons) {
-    if (!alive(m)) continue;
+    if (!alive(m) || unborn(m)) continue;   // step 3b: a riser can't be hurt until it is up
     const b = monBox(m);
     if (b[1] < x0 || b[0] > x1 || b[3] < y0 || b[2] > y1) continue;
     hits++;
@@ -10345,6 +11158,7 @@ function damage(g, lb, m, n, dir) {    // a blow or a fireball: it flares and jo
 }
 function defeat(g, lb, m) {            // card pieces and its wisp rising to the score (the kit's, 1.6 s); the echo counts as it arrives
   m.st = 'defeat'; m.t = 0; m.atk = null; m.wdx = 0; m.ody = 0; m.beatenAt = lb.time;
+  if (g.run === 'rot') { const sure = rotFelled(g, lb, m); feast(g, lb, false); if (sure) sureDrop(g, lb, m); else dropLoot(g, lb, m); return; }   // The Endless Rot: felled, not echo (step 2); the sure drop (step 3)
   const n = MON[m.kind].wisps * hard(g, 'echo');   // step 5e-5: doubled in the second loop
   lb.sfx('defeat', n);                 // step 5d: the card tearing, then its wisp's echo, louder the more echo it gives
   g.echoDue += n;
@@ -10397,7 +11211,7 @@ function shotsUpdate(g, lb, dt) {     // each fireball flies on until it hits a 
   for (const s of g.shots) {
     if (s.burst != null) { s.burst += dt; if (s.burst >= 0.4) s.gone = true; continue; }
     s.x += s.f * FIRE_SPEED * dt;
-    const m = g.mons.find((q) => { if (!alive(q)) return false; const b = monBox(q); return !(b[1] < s.x - 10 || b[0] > s.x + 10 || b[3] < s.y - 10 || b[2] > s.y + 10); });
+    const m = g.mons.find((q) => { if (!alive(q) || unborn(q)) return false; const b = monBox(q); return !(b[1] < s.x - 10 || b[0] > s.x + 10 || b[3] < s.y - 10 || b[2] > s.y + 10); });
     const bb = m ? null : bossBody(g), lg = m || !bb ? null : bossLegs(g);
     if (m) { s.burst = 0; lb.sfx('burst'); damage(g, lb, m, SPELL.fire.dmg[s.level], s.f); }
     else if (bb && !(bb[1] < s.x - 10 || bb[0] > s.x + 10 || bb[3] < s.y - 10 || bb[2] > s.y + 10)) { s.burst = 0; lb.sfx('burst'); bossDamage(g, lb, SPELL.fire.dmg[s.level]); }
@@ -10426,7 +11240,7 @@ function teachOnce(g, lb, id) {  // the first time a control matters in a taught
 // targets: every monster alive and the boss's body while it can be struck, each with its box and its middle
 function boltTargets(g) {
   const list = [];
-  for (const m of g.mons) if (alive(m)) { const b = monBox(m); list.push({ m, b, x: (b[0] + b[1]) / 2, y: (b[2] + b[3]) / 2 }); }
+  for (const m of g.mons) if (alive(m) && !unborn(m)) { const b = monBox(m); list.push({ m, b, x: (b[0] + b[1]) / 2, y: (b[2] + b[3]) / 2 }); }
   const bb = bossBody(g);
   if (bb) list.push({ boss: true, b: bb, x: (bb[0] + bb[1]) / 2, y: Math.max(bb[2] + 20, (bb[2] + bb[3]) / 2) });
   return list;
@@ -10483,13 +11297,13 @@ function acidHit(g, lb, s) {
   // step 5e-6c: and nothing solid between the spray's mouth and it
   const meets = (b) => b && !(b[1] < x0 || b[0] > x1 || b[3] < y0 || b[2] > y1) && !lineBlock(g, s.x, s.y, (b[0] + b[1]) / 2, (b[2] + b[3]) / 2, b, s.on);
   let any = false;
-  for (const m of g.mons) if (alive(m) && meets(monBox(m))) { any = true; damage(g, lb, m, s.dmg * 0.5, s.f); }
+  for (const m of g.mons) if (alive(m) && !unborn(m) && meets(monBox(m))) { any = true; damage(g, lb, m, s.dmg * 0.5, s.f); }
   const share = bossShare(g, meets);   // Barney, 8 November 2026: the Moor Mother's legs too, for LEG_HIT
   if (share) { any = true; bossDamage(g, lb, s.dmg * 0.5 * share); }
 }
 function patchHit(g, lb, p) {
   for (const m of g.mons) {
-    if (!alive(m) || !MON[m.kind].ground) continue;
+    if (!alive(m) || unborn(m) || !MON[m.kind].ground) continue;
     const b = monBox(m), py = p.slope ? g.L.ground(Math.max(p.x0, Math.min(p.x1, (b[0] + b[1]) / 2))) : p.y;   // step 5e-6a: along a slope
     if (b[1] >= p.x0 && b[0] <= p.x1 && Math.abs(b[3] - py) < 24) damage(g, lb, m, p.dmg, p.f);
   }
@@ -10702,6 +11516,7 @@ function bossDamage(g, lb, n) {
   // beaten: its card pieces and golden wisp, the bar goes, its sure drop, and its crawlers break up with it
   b.st = 'defeat'; b.t = 0; b.move = null;
   lb.sfx('bossDefeated'); lb.hud.boss(null);
+  if (b.place === 'night' && !g.check && g.run !== 'rot' && lb.progress && !lb.progress.rotOpen) { lb.progress.rotOpen = true; lb.saveProgress(); }   // design system 23 (NewRun): The Endless Rot opens, free, with one saved flag
   // part G: a life, or at five lives LIFE_ECHO more echo with the boss's own (one count, one echo sound)
   const full = g.lives >= LIVES_MAX, bossEcho = (BOSS_WISPS + (full ? LIFE_ECHO : 0)) * hard(g, 'echo');   // step 5e-5: doubled in the second loop
   g.echoDue += bossEcho;
@@ -10748,7 +11563,10 @@ function drawBoss(g, lb, w) {
 function dropLoot(g, lb, m) {
   let kind = null;
   const more = g.graces.robber ? GRACE.robber : 1;   // step 5e-6b: Grave Robber, loot half as often again
-  if (m.kind === 'walker' && lb.rand() < DROP.upgrade * more) {
+  // The Endless Rot's own rule (Barney, 14 November 2026: "Sword and spell upgrades should drop from normal monsters as well", at 1 in
+  // 30): in the mode every monster but a walker has its own chance of an upgrade, checked first as a walker's is; a walker keeps its 1 in 4
+  const up = m.kind === 'walker' ? DROP.upgrade : g.run === 'rot' ? DROP.rotUpgrade : 0;
+  if (up && lb.rand() < up * more) {
     const can = [];
     if (g.spells.heal < 3) can.push('heal'); if (g.spells[g.attack] < 3) can.push(g.attack);   // step 5e-2: the run's attack spell
     if (g.sword.reach < 2) can.push('reach'); if (g.sword.bite < 2) can.push('rune');
@@ -10811,7 +11629,7 @@ function lootUpdate(g, lb, dt) {
     if (it.drop != null) { it.drop += dt; if (it.drop >= 0.45) it.drop = null; continue; }   // out of the fallen monster (0.45 s)
     if (it.pick != null) { it.pick += dt; if (it.pick >= 0.5) it.gone = true; continue; }   // lifting into him (0.5 s)
     if (it.keep != null) { it.keep += dt; if (it.keep >= 0.45) it.gone = true; continue; }   // version 11: flying up to its socket (0.45 s)
-    if (it.x < camX - 200) { it.gone = true; continue; }   // left behind off the screen
+    if (it.x < camX - 200 && g.run !== 'rot') { it.gone = true; continue; }   // left behind off the screen (in an arena he can always walk back to it)
     // touched: it hovers a little above the ground (or a piece) at his feet
     if (free && Math.abs(it.x - g.x) < BODY_W + 12 * LOOT_SIZE && it.y > g.y - BODY_H && it.y - 34 * LOOT_SIZE < g.y + 2) { const r = take(g, lb, it); if (r === 'keep') it.keep = 0; else if (r) it.pick = 0; }
   }
@@ -10834,6 +11652,7 @@ function take(g, lb, it) {             // false: not needed now (health, mana or
       // loot, and as it arrives (0.5 s) the counter steps up with the wisp's echo sound (the kit draws a rising wisp only as part of a
       // monster's defeat). Owed until then, as a defeat's echo is, so a run that ends or is saved meanwhile counts it.
       if (g.armour >= 3) {
+        if (g.run === 'rot') { g.spareDue = (g.spareDue || 0) + SPARE_ARMOUR; break; }   // The Endless Rot (step 5; Loot, version 23): added to the wave's pay, on its end line, never doubled
         const n = SPARE_ARMOUR * hard(g, 'echo');
         g.echoDue += n;
         lb.after(0.5, () => { if (g.banked) return; g.echoDue -= n; lb.addWisps(n); lb.sfx('echo', n); });
@@ -10904,12 +11723,12 @@ function hurtCheck(g, lb) {
   const rolling = g.mode === 'roll', h = rolling ? ROLL_H : BODY_H, x0 = g.x - BODY_W, x1 = g.x + BODY_W, y0 = g.y - h, y1 = g.y;
   const meets = (b) => b && !(b[1] < x0 || b[0] > x1 || b[3] < y0 || b[2] > y1);
   for (const m of g.mons) {
-    if (!alive(m) || (m.riseT != null && m.riseT < 0.35)) continue;   // a crawler still rising out of the ground can't hurt yet
+    if (!alive(m) || (m.riseT != null && m.riseT < 0.35) || unborn(m)) continue;   // a crawler still rising out of the ground can't hurt yet (step 3b: nor a riser)
     // the Night pass, part D: what hit him, for the run log: the attack's sweep, or its body in an attack that moves it (a lunge, a dive, a
     // leap), or else its touch
     const a = m.atk && m.atk.name;
-    if (meets(atkZone(m, g))) return hurt(g, lb, MON[m.kind].dmg, m.px, { by: m.kind, atk: a || 'touch' });
-    if (!(rolling && MON[m.kind].through) && meets(monBox(m))) return hurt(g, lb, MON[m.kind].dmg, m.px, { by: m.kind, atk: a && a !== 'spit' && !MON[m.kind].zone ? a : 'touch' });
+    if (meets(atkZone(m, g))) return hurt(g, lb, monBlow(g, m.kind), m.px, { by: m.kind, atk: a || 'touch' });   // The Endless Rot: its ramp (monBlow)
+    if (!(rolling && MON[m.kind].through) && meets(monBox(m))) return hurt(g, lb, monBlow(g, m.kind), m.px, { by: m.kind, atk: a && a !== 'spit' && !MON[m.kind].zone ? a : 'touch' });
   }
   const hit = bossHits(g, rolling);
   if (hit) return hurt(g, lb, hit.dmg, hit.x, { by: 'boss', atk: hit.atk || 'touch' });
@@ -11049,17 +11868,20 @@ function monstersUpdate(g, lb, dt) {
     if (m.st === 'gone') continue;
     if (m.st === 'defeat') { m.t += dt; if (m.t >= 1.6) m.st = 'gone'; continue; }
     if (m.hitT != null) m.hitT += dt;
-    if (!m.awake) { if (m.bx < camX + lb.W + 40 && m.bx > camX - 200) m.awake = true; else continue; }   // it starts once seen
-    if (Math.abs(m.bx - g.x) > lb.W * 1.3) continue;   // left far behind, it waits
+    if (!m.arena) {                    // The Endless Rot's arrivals are on their way from the start, wherever he is
+      if (!m.awake) { if (m.bx < camX + lb.W + 40 && m.bx > camX - 200) m.awake = true; else continue; }   // it starts once seen
+      if (Math.abs(m.bx - g.x) > lb.W * 1.3) continue;   // left far behind, it waits
+    }
     monsterUpdate(m, g, lb, dt, busy, camX);
   }
 }
 function startAttack(m, name, extra) { m.atk = Object.assign({ name, t: 0 }, extra || {}); m.moving = false; }
 function monsterUpdate(m, g, lb, dt, busy, camX) {
   const K = MON[m.kind];
-  if (m.riseT != null && m.riseT < 0.35) { m.riseT += dt; return; }   // a called crawler still rising out of the ground
+  if (m.riseW != null) { m.riseW += dt; if (m.riseW >= ROT_RISE.warn) { m.riseW = null; m.riseT = 0; } return; }   // step 3b: its warning, then its rise
+  if (m.riseT != null && m.riseT < (m.riseLen || 0.35)) { m.riseT += dt; return; }   // a called crawler still rising out of the ground (step 3b: or a riser, 0.6 s)
   if (m.atk) {                         // signal, attack, recover: it moves as the attack moves it, facing the way it began
-    m.atk.t += dt;
+    m.atk.t += dt * atkPace(g);        // The Endless Rot: its attacks quicker wave by wave (the journey's as they were)
     if (m.atk.name === 'spit' && !m.atk.left && m.atk.t >= SPIT.leave) { m.atk.left = true; spitLeave(g, lb, m); }   // step 5e-8: the gob leaves
     const mv = atkMove(m.atk);
     m.wdx = -mv.dx * m.f; m.ody = mv.dy;
@@ -11068,12 +11890,13 @@ function monsterUpdate(m, g, lb, dt, busy, camX) {
       m.bx = m.px; if (!K.ground) m.by = m.py;
       // step 5e-8: after a spit the mouth-hat holds its ground (SPIT.wait); on the second loop its waits are 1.2 times shorter
       const spat = m.atk.name === 'spit';
-      m.atk = null; m.wdx = 0; m.ody = 0; m.cd = K.spit ? (spat ? SPIT.wait : K.cd) / hard(g, 'speed') : K.cd; m.held = spat;
+      m.atk = null; m.wdx = 0; m.ody = 0; m.cd = K.spit ? (spat ? SPIT.wait : K.cd) / (g.run === 'rot' ? 1 : hard(g, 'speed')) : K.cd; m.held = spat;   // the mode's waits run quicker instead (atkPace)
       place(m, g, m.bx, 0);
     }
     return;
   }
-  m.cd -= dt;
+  m.cd -= dt * atkPace(g);
+  if (m.entry != null) return enterStep(m, g, lb, dt);   // The Endless Rot: still on its way in from beyond an end
   const d = g.x - m.bx, ad = Math.abs(d);
   m.f = d >= 0 ? 1 : -1;               // it faces him
   if (!K.ground) {                     // the flyer: hangs above the path, drifting nearer, then dives at his chest and climbs away
@@ -11102,8 +11925,11 @@ function monsterUpdate(m, g, lb, dt, busy, camX) {
   m.patrol = !reach;
   if (reach) {
     if (m.cd <= 0 && ad <= K.range && ad > 18) {
-      // the walker: a high sweep at him up on a piece, otherwise high or low, half and half
-      startAttack(m, K.atk === 'sweep' ? (g.on || lb.rand() < 0.5 ? 'high' : 'low') : K.atk);
+      // the walker: a high sweep at him up on a piece; a low sweep when it stands higher than the ground under him on a slope (Barney,
+      // 14 November 2026: "still doing the high sweep too much when higher than me on a slope"; from there its high sweep passes 50 to 70
+      // over his head, where the low sweep reaches him; CM214: from 4 higher, where it was 20, as from there too a high sweep passes 25
+      // to 45 over his head); otherwise high or low, half and half
+      startAttack(m, K.atk === 'sweep' ? (g.on ? 'high' : g.L.ground(g.x) - m.py > WALKER_ABOVE ? 'low' : lb.rand() < 0.5 ? 'high' : 'low') : K.atk);
       return;
     }
     goal = g.x - m.f * (m.cd <= 0 ? K.range * 0.8 : K.keep);   // in to striking range, or holding off while it gathers itself
@@ -11216,7 +12042,7 @@ function spitUpdate(g, lb, dt) {
       const q = b.path.at(t / SPIT.fly);
       if (gobMeets(g, q[0], q[1])) {   // it bursts on him
         b.done = true; g.splats.push({ x: q[0], y: q[1], slope: 0, t: 0, from: b.from, hurts: false }); lb.sfx('splat');
-        hurt(g, lb, SPIT.dmg, b.from, SPAT);
+        hurt(g, lb, SPIT.dmg * monDmg(g), b.from, SPAT);
       }
     }
     if (b.done) continue;
@@ -11229,7 +12055,7 @@ function spitUpdate(g, lb, dt) {
     if (s.hurts && s.t > SPIT.splashT) s.hurts = false;
     if (s.hurts && canHurt(g)) {
       const h = g.mode === 'roll' ? ROLL_H : BODY_H;
-      if (!(s.x + SPIT.splashR < g.x - BODY_W || s.x - SPIT.splashR > g.x + BODY_W || s.y < g.y - h || s.y - SPIT.splashH > g.y)) { s.hurts = false; hurt(g, lb, SPIT.dmg, s.from, SPAT); }
+      if (!(s.x + SPIT.splashR < g.x - BODY_W || s.x - SPIT.splashR > g.x + BODY_W || s.y < g.y - h || s.y - SPIT.splashH > g.y)) { s.hurts = false; hurt(g, lb, SPIT.dmg * monDmg(g), s.from, SPAT); }
     }
   }
   g.splats = g.splats.filter((s) => s.t < SPIT.splatT);
@@ -11249,7 +12075,8 @@ function drawMonsters(g, lb, w, camX, flyers) {
     if (m.atk) o.attack = m.atk.name === 'dive' ? { name: 'dive', t: m.atk.t, dir: -1, dx: m.atk.dx, dy: m.atk.dy } : { name: m.atk.name, t: m.atk.t };
     else if (m.kind === 'hatmaw' && m.walkT > 0) o.attack = { name: 'hop', t: m.walkT };
     if (m.hitT != null && m.hitT < 0.13) o.hit = m.hitT;
-    if (m.riseT != null && m.riseT < 0.35) o.rise = m.riseT;
+    if (m.riseW != null) continue;     // step 3b: a riser in its warning: only the warning shows (drawWarns)
+    if (m.riseT != null && m.riseT < (m.riseLen || 0.35)) { o.rise = m.riseT; if (m.riseLen) o.riseLen = m.riseLen; }   // step 3b: a riser's deeper rise (the kit's, from its own height)
     w.monster(o);
   }
 }
@@ -11338,10 +12165,24 @@ const pct95 = (a) => { const b = a.slice().sort((x, y) => x - y); return b.lengt
 function startCheck(g, lb) {
   Object.assign(g, { safe: true, teach: false, monsTest: 'normal', loop: 1, orders: null });
   g.check = { legs: [], i: -1, phase: 'settle', t: 0, leadT: 0, inp: noInput(), res: [], work: 0, last: 0, lvl: null, stable: 0, slips: 0, picLost: 0, hooked: false, redone: 0 };
-  PLACES.forEach((p, k) => g.check.legs.push({ p: k, boss: false, n: 0 }, { p: k, boss: true, n: 0 }));
-  withSeed(1, () => loadPlace(g, lb, 0, 0));
+  const rot = g.check.rot = wantRotCheck(lb);
+  if (rot) {                           // The Endless Rot's: in its arenas, with what its run starts with (startRot)
+    g.run = 'rot';
+    ROT_CHECK.waves.forEach((n) => g.check.legs.push({ p: arenaOfWave(n), wave: n, boss: false, n: 0 }));
+    g.spells = { heal: 1 }; g.spells[g.attack] = 1; g.spellList = ['heal', g.attack];
+    g.felled = 0; g.wave = null; g.rotN = 0; lb.hud.counter('Felled', 0);
+    loadArena(g, lb, 0);
+    // Barney, 14 November 2026 (the Fire's first run: in the empty arena Automatic stayed at Best, so the first legs were timed at
+    // Best and Faster): the picture settles while the first leg's wave fills Night's arena and comes at him, as play begins, where the
+    // journey's check settles on Night's path among its monsters; the first leg then begins afresh
+    startWave(g, lb, ROT_CHECK.waves[0], false);
+    g.wave.gap = ROT_CHECK.fill;
+  } else {
+    PLACES.forEach((p, k) => g.check.legs.push({ p: k, boss: false, n: 0 }, { p: k, boss: true, n: 0 }));
+    withSeed(1, () => loadPlace(g, lb, 0, 0));
+  }
   lb.hud.health(1); lb.hud.mana(1); lb.hud.armour(g.armour); lb.hud.lives(LIVES); hudSpells(g, lb); lb.hud.potCap(g.potCap.health, g.potCap.mana); lb.hud.potions(0, 0);
-  lb.fade(0); enterPlace(g, lb); g.mode = 'ground';
+  lb.fade(0); if (rot) enterArena(g, lb); else enterPlace(g, lb); g.mode = 'ground';
   wakeHold(true);                      // 5f-3: the screen kept awake until its result is left
   if (lb.settings.picture !== 'auto') nextLeg(g, lb);
   return g;
@@ -11367,7 +12208,11 @@ function nextLeg(g, lb) {
   if (C.i >= C.legs.length) return finishCheck(g, lb);
   const leg = C.legs[C.i], prev = C.legs[C.i - 1];
   lb.hud.boss(null);
-  if (leg.boss) {                      // at the boss's door: the path's monsters left behind, so it is fought alone, with what it summons
+  if (leg.wave) {                      // The Endless Rot's: the arena, and its wave begun with no line, the arena filling quickly (ROT_CHECK)
+    loadArena(g, lb, leg.p);
+    startWave(g, lb, leg.wave, false);
+    C.gap = g.wave.gap; g.wave.gap = ROT_CHECK.fill;
+  } else if (leg.boss) {               // at the boss's door: the path's monsters left behind, so it is fought alone, with what it summons
     withSeed(1000 * (leg.p + 1), () => loadPlace(g, lb, leg.p, 2));
     g.mons = [];
   } else {
@@ -11385,16 +12230,19 @@ function nextLeg(g, lb) {
   }
   Object.assign(g, { vy: 0, facing: 1, mode: 'ground', mt: 0, walkDist: 0, landT: 9, cast: null, castBuf: 0, atkBuf: 0, lost: null, safeT: 0, hurtT: 9 });
   lb.fade(0);                          // 5f-2: nothing left black from the leg before
-  if (!prev || prev.p !== leg.p) enterPlace(g, lb);
+  if (leg.wave) enterArena(g, lb);
+  else if (!prev || prev.p !== leg.p) enterPlace(g, lb);
   // 5f-2 (Barney's Pixel blacked out under the HUD): each leg named as it begins, under the HUD's top row, without a chime; gone (2 s)
   // before its timing starts, so a tester sees it working and, if the picture ever goes, which leg it went on
-  lb.hud.line(null, checkWord() + ' ' + (C.i + 1) + ' of ' + C.legs.length + ': ' + (leg.boss ? lb.world.bossNames[PLACES[leg.p]] : PLACE_SHORT[leg.p]), { chime: false });
+  lb.hud.line(null, checkWord() + ' ' + (C.i + 1) + ' of ' + C.legs.length + ': ' + (leg.boss ? lb.world.bossNames[PLACES[leg.p]] : PLACE_SHORT[leg.p] + (leg.wave ? ', wave ' + leg.wave : '')), { chime: false });
   C.phase = 'lead'; C.leadT = 0; C.t = 0;
 }
 const checkWord = () => (PLAYTEST ? 'Speed test' : 'Play check');
 // the play check's hands: on, over a pit and up a face (a jump, or a climb where it is too tall), or at a boss, near enough to strike it
 function drive(g, lb) {
   const C = g.check, leg = C.legs[C.i], inp = noInput(), b = g.boss;
+  if (!leg && C.rot) return inp;       // The Endless Rot's, before its first wave: he stands in the arena
+  if (leg && leg.wave) return driveRot(g, lb, C, inp);
   let dir = 1;
   if (leg && leg.boss && b && b.st !== 'wait') {
     const d = b.bx - g.x, ad = Math.abs(d), toward = d >= 0 ? 1 : -1;
@@ -11411,6 +12259,33 @@ function drive(g, lb) {
     if (face || pit) inp.pressed.jump = true;
   }
   return inp;
+}
+// The Endless Rot's hands: facing the nearest monster that is in; once the timing has begun and the wave has its most on screen, on to it
+// and the sword swung within its reach (the arena is flat, with no pits or faces)
+const rotOut = (g) => g.mons.reduce((k, m) => k + (alive(m) ? 1 : 0), 0);
+const rotFull = (g) => !!g.wave && rotOut(g) >= g.wave.most && !g.mons.some((m) => alive(m) && (m.entry != null || unborn(m)));   // the wave's most on screen, all of them in (and up)
+function driveRot(g, lb, C, inp) {
+  const W = g.wave;
+  let m = null, ad = Infinity;
+  g.mons.forEach((q) => { const d = Math.abs(q.bx - g.x); if (alive(q) && q.entry == null && !unborn(q) && d < ad) { m = q; ad = d; } });
+  if (!m || !W || g.mode !== 'ground') return inp;
+  const toward = m.bx >= g.x ? 1 : -1, keep = swordReach(g) + halfW(m) - 6;
+  if (C.phase === 'lead' || rotOut(g) < W.most) { g.facing = toward; return inp; }
+  if (ad > keep - 8) { if (toward > 0) inp.right = true; else inp.left = true; } else g.facing = toward;
+  if (ad <= keep && g.facing === toward) inp.pressed.attack = true;
+  return inp;
+}
+// The Endless Rot's wave never ends in the check (as its bosses are never beaten): with under 30% of its bar left, it is put back to 60%,
+// the monsters still to come counted again
+function rotCheckHold(g, lb, C) {
+  const W = g.wave;
+  if (!W) return;
+  if (C.phase !== 'lead') W.gap = C.gap;   // the arena full: the wave's own gap between arrivals
+  if (W.done || (W.size - W.felled) / W.size < 0.3) {
+    const d = W.felled - Math.round(0.4 * W.size);
+    Object.assign(W, { done: false, dt: 0, barGone: false, paid: false, felled: W.felled - d, sent: W.sent - d });
+    lb.hud.boss({ name: 'Wave ' + W.n, hp: (W.size - W.felled) / W.size, full: true });
+  }
 }
 function checkUpdate(g, lb) {
   const C = g.check, u0 = performance.now();
@@ -11431,8 +12306,11 @@ function checkUpdate(g, lb) {
   const leg = C.legs[C.i], b = g.boss;
   if (leg && C.phase === 'lead') {
     C.leadT += 1 / 60;
-    if ((leg.boss ? b && b.st === 'fight' : g.x >= C.xWarm) || C.leadT > 15) { C.phase = 'warm'; C.t = 0; C.legLvl = lb.picture.level; }
+    // The Endless Rot's: its timing begins once the wave has its most on screen, all of them in
+    const ready = leg.wave ? rotFull(g) : leg.boss ? b && b.st === 'fight' : g.x >= C.xWarm;
+    if (ready || C.leadT > 15) { C.phase = 'warm'; C.t = 0; C.legLvl = lb.picture.level; }
   }
+  if (leg && leg.wave) rotCheckHold(g, lb, C);
   if (leg && leg.boss && b && b.st === 'fight' && b.hp < b.max * 0.3) { b.hp = b.max * 0.6; lb.hud.boss({ name: b.name, hp: b.hp / b.max }); }   // never beaten
   C.work += performance.now() - u0;
 }
@@ -11457,22 +12335,24 @@ function checkDraw(ctx, g, lb) {
   if ((C.phase === 'warm' || C.phase === 'run' || C.phase === 'load') && lb.picture.level !== C.legLvl) { C.redone++; C.i--; nextLeg(g, lb); return; }
   if (C.phase === 'settle') {          // Picture Automatic finding its level
     const lv = lb.picture.level;
-    if (lv !== C.lvl) { C.lvl = lv; C.stable = 0; } else C.stable += gap;
+    if (lv !== C.lvl || (C.rot && !rotFull(g))) { C.lvl = lv; C.stable = 0; } else C.stable += gap;   // The Endless Rot's: counted once its arena is full
     C.t += gap;
-    if (C.stable >= CHECK.settle * 1000 || C.t >= CHECK.settleMax * 1000) nextLeg(g, lb);
+    if (C.stable >= (C.rot ? ROT_CHECK.settle : CHECK.settle) * 1000 || C.t >= (C.rot ? ROT_CHECK.settleMax : CHECK.settleMax) * 1000) nextLeg(g, lb);
   } else if (C.phase === 'warm') {
     C.t += gap;
     if (C.t >= CHECK.warm * 1000) { C.phase = 'run'; C.t = 0; C.cur = { gaps: [], work: [] }; }
   } else if (C.phase === 'run') {
     C.cur.gaps.push(gap); C.cur.work.push(work); C.t += gap;
+    if (C.rot) C.cur.most = Math.max(C.cur.most || 0, rotOut(g));   // The Endless Rot's: the most monsters on screen while timed
     if (C.t >= CHECK.run * 1000) { C.phase = 'load'; C.t = 0; C.loadStart = null; C.loadN = 0; C.loadPlay = 0; C.cur.level = lb.picture.level; }
   } else if (C.phase === 'load') {
     if (C.loadStart == null) { C.loadStart = now; C.loadN = 0; } else C.loadN++;
     C.t += gap;
     if (C.t >= CHECK.load * 1000 || C.loadPlay >= CHECK.loadPlay) {
       const c = C.cur, leg = C.legs[C.i], sum = c.gaps.reduce((a, b) => a + b, 0), per = (now - C.loadStart) / Math.max(1, C.loadN);
-      C.res.push({ place: leg.p, boss: leg.boss, n: leg.n, fps: c.gaps.length * 1000 / sum, slow: pct95(c.gaps), max: Math.max(...c.gaps),
+      C.res.push({ place: leg.p, boss: leg.boss, n: leg.wave ? c.most || 0 : leg.n, fps: c.gaps.length * 1000 / sum, slow: pct95(c.gaps), max: Math.max(...c.gaps),
         drawn: per / CHECK.reps, keptUp: per < 18, work: c.work.reduce((a, b) => a + b, 0) / c.work.length, level: c.level });   // kept up: eight frames inside one refresh, so the time is an upper limit
+      if (leg.wave) C.res[C.res.length - 1].wave = leg.wave;   // The Endless Rot's: the wave timed
       nextLeg(g, lb);
     }
   }
@@ -11483,6 +12363,7 @@ function finishCheck(g, lb) {
   lb.hud.boss(null);
   const res = { v: 1, kit: lb.version, day: today(), device: device(), width: p.width, height: p.height, k: p.sharpness, lines: Math.round(lb.W),
     picture: s.picture, effects: !!s.effects, rm: !!s.reduceMotion, slips: C.slips, picLost: C.picLost, legs: C.res, trials: lb.trials || [] };   // trials: kit 0.20.2
+  if (C.rot) res.rot = true;           // The Endless Rot's
   C.result = readCheck(res);
   // 5f-2 (Barney's Pixel: the reload to the title left it black for about 10 s): the result shows at once, over the scene paused as P pauses
   // it (the kit has no call for a game to pause; onPause opens the result in place of the pause plaque, where the menus' keys work and a
@@ -11529,11 +12410,14 @@ function readCheck(o) {
       drawn: num(q.drawn, 0, 1e5), keptUp: q.keptUp === true, work: num(q.work, 0, 1e5) || 0, level: ['best', 'faster', 'fastest'].indexOf(q.level) >= 0 ? q.level : '' };
     if (r.place == null || r.fps == null || r.slow == null || r.max == null || r.drawn == null) return null;
     r.place = Math.round(r.place);
+    if (o.rot === true) { const w = num(q.wave, 1, 1e6); if (w == null) return null; r.wave = Math.round(w); }   // The Endless Rot's: the wave timed
     legs.push(r);
   }
-  return { kit: str(o.kit, 20), day: str(o.day, 10), device: str(o.device, 160), width: num(o.width, 0, 1e5) || 0, height: num(o.height, 0, 1e5) || 0, k: num(o.k, 0, 10) || 1,
+  const out = { kit: str(o.kit, 20), day: str(o.day, 10), device: str(o.device, 160), width: num(o.width, 0, 1e5) || 0, height: num(o.height, 0, 1e5) || 0, k: num(o.k, 0, 10) || 1,
     lines: num(o.lines, 0, 1e5) || 0, picture: PICTURE_NAMES[o.picture] ? o.picture : 'auto', effects: o.effects !== false, rm: o.rm === true, slips: num(o.slips, 0, 99) || 0,
     picLost: num(o.picLost, 0, 99) || 0, legs, trials: Array.isArray(o.trials) ? o.trials.filter((x) => typeof x === 'string').slice(0, 8).map((x) => x.slice(0, 40)) : [] };
+  if (o.rot === true) out.rot = true;
+  return out;
 }
 function checkShown(lb) {
   let o = null;
@@ -11544,7 +12428,8 @@ function checkShown(lb) {
   if (res) lb.ui.open((ui) => checkPlaque(lb, ui, res));
   return !!res;
 }
-const legName = (lb, r) => PLACE_SHORT[r.place] + (r.boss ? ', ' + lb.world.bossNames[PLACES[r.place]] : ', the path (' + r.n + (r.n === 1 ? ' monster)' : ' monsters)'));
+const legName = (lb, r) => PLACE_SHORT[r.place] + (r.wave ? ', wave ' + r.wave + ' (at most ' + r.n + (r.n === 1 ? ' monster)' : ' monsters)') :   // The Endless Rot's
+  r.boss ? ', ' + lb.world.bossNames[PLACES[r.place]] : ', the path (' + r.n + (r.n === 1 ? ' monster)' : ' monsters)'));
 const drawnIn = (r) => (r.keptUp ? 'under ' : '') + r.drawn.toFixed(1) + ' ms';
 const phonePass = (res) => res.legs.every((r) => r.fps >= 29.5 && r.drawn <= 25);
 const computerPass = (res) => res.legs.every((r) => r.fps >= 58);
@@ -11552,7 +12437,7 @@ const computerPass = (res) => res.legs.every((r) => r.fps >= 58);
 function checkText(lb, res) {
   const lvl = res.legs[res.legs.length - 1].level;
   const lines = [
-    'Gloam Hallow ' + (PLAYTEST ? 'speed test' : 'play check') + ', ' + res.day + ', kit ' + res.kit,
+    'Gloam Hallow ' + (PLAYTEST ? 'speed test' : 'play check') + (res.rot ? ', ' + ROT_NAME : '') + ', ' + res.day + ', kit ' + res.kit,
     res.device + ' · ' + res.width + ' × ' + res.height + ' at ' + res.k.toFixed(2) + '× · ' + res.lines + ' lines wide · Picture ' + PICTURE_NAMES[res.picture] +
       (lvl ? ' (' + PICTURE_NAMES[lvl] + ')' : '') + (res.effects ? '' : ' · effects off') + (res.rm ? ' · reduce motion' : '') + (res.slips ? ' · ' + res.slips + ' falls' : '') +
       (res.picLost ? ' · the picture was lost ' + res.picLost + (res.picLost === 1 ? ' time' : ' times') : '') +
@@ -11566,7 +12451,7 @@ function checkText(lb, res) {
 }
 // the result on the title (the plaque built from the kit's parts): each place's path and boss, the targets, and the ways to send it
 function checkPlaque(lb, ui, res, inRun) {   // inRun (5f-2): over the paused scene, so Close leaves the run
-  const phone = ui.phone, text = checkText(lb, res), subject = 'Gloam Hallow ' + (PLAYTEST ? 'speed test' : 'play check');
+  const phone = ui.phone, text = checkText(lb, res), subject = 'Gloam Hallow ' + (PLAYTEST ? 'speed test' : 'play check') + (res.rot ? ', ' + ROT_NAME : '');
   const { panel, face } = ui.plaque('gh-ck', 560, 640, phone ? 'gap:6px;padding:12px 16px 12px' : 'gap:10px;padding:18px 20px 14px');
   const head = ui.heading('gh-ck', PLAYTEST ? 'Speed test' : 'Play check');
   const t = ui.el('table', 'lb-scores');
@@ -11577,10 +12462,11 @@ function checkPlaque(lb, ui, res, inRun) {   // inRun (5f-2): over the paused sc
     return tr;
   };
   const thead = document.createElement('thead'), tbody = document.createElement('tbody');
-  thead.append(row(['Place', 'The path', 'Its boss'], true));
+  // The Endless Rot's: each arena's row, its last wave the first time round and again, harder
+  thead.append(row(res.rot ? [ROT_NAME, 'First time', 'Again, harder'] : ['Place', 'The path', 'Its boss'], true));
   const cell = (r) => (r ? Math.round(r.fps) + ' fps · ' + drawnIn(r) : '');
   PLACE_SHORT.forEach((name, p) => {
-    const a = res.legs.find((r) => r.place === p && !r.boss), b = res.legs.find((r) => r.place === p && r.boss);
+    const a = res.legs.find((r) => r.place === p && (res.rot ? r.wave < 13 : !r.boss)), b = res.legs.find((r) => r.place === p && (res.rot ? r.wave >= 13 : r.boss));
     if (a || b) tbody.append(row([name, cell(a), cell(b)]));
   });
   t.append(thead, tbody);
